@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: "AIzaSyCifzoFShaUsJJ0Bpu_U5MF1GKQknESr7M" });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
 export interface VocabValidationResult {
   word: string;

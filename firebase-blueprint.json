@@ -1,0 +1,61 @@
+{
+  "entities": {
+    "Vocabulary": {
+      "title": "Vocabulary",
+      "description": "A single vocabulary entry in the user's sanctuary.",
+      "type": "object",
+      "properties": {
+        "word": { "type": "string", "description": "The vocabulary word or phrase." },
+        "type": { "type": "string", "description": "Part of speech (noun, verb, adj, etc.)" },
+        "ipa": { "type": "string", "description": "IPA pronunciation." },
+        "meaning": { "type": "string", "description": "Definition of the word." },
+        "context": { "type": "string", "description": "Usage context (formal, informal, etc.)" },
+        "example": { "type": "string", "description": "Example sentence." },
+        "topicId": { "type": "string", "description": "Reference to the Topic ID." },
+        "userId": { "type": "string", "description": "Owner of the vocabulary." },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["word", "type", "meaning", "userId", "topicId"]
+    },
+    "Topic": {
+      "title": "Topic",
+      "description": "A category for grouping vocabulary.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Name of the topic." },
+        "userId": { "type": "string", "description": "Owner of the topic." },
+        "isUnclassified": { "type": "boolean", "description": "Whether this is the default unclassified topic." }
+      },
+      "required": ["name", "userId"]
+    },
+    "UserProgress": {
+      "title": "UserProgress",
+      "description": "Tracking SRS progress for a specific word.",
+      "type": "object",
+      "properties": {
+        "wordId": { "type": "string", "description": "ID of the vocabulary word." },
+        "userId": { "type": "string", "description": "ID of the user." },
+        "interval": { "type": "number", "description": "Current interval in days." },
+        "repetition": { "type": "number", "description": "Number of successful repetitions." },
+        "easeFactor": { "type": "number", "description": "Ease factor for SM-2 algorithm." },
+        "nextReview": { "type": "string", "format": "date-time", "description": "Next scheduled review date." },
+        "status": { "type": "string", "enum": ["new", "learning", "mastered"] }
+      },
+      "required": ["wordId", "userId", "interval", "repetition", "easeFactor", "nextReview", "status"]
+    }
+  },
+  "firestore": {
+    "/topics/{topicId}": {
+      "schema": "Topic",
+      "description": "User topics."
+    },
+    "/vocabulary/{vocabId}": {
+      "schema": "Vocabulary",
+      "description": "User vocabulary entries."
+    },
+    "/progress/{progressId}": {
+      "schema": "UserProgress",
+      "description": "User learning progress for each word."
+    }
+  }
+}

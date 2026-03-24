@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Search, Filter, Download, Edit, ChevronLeft, Trash2, X, Save, Volume2, Loader2 } from "lucide-react";
 import { useFirebase } from "../hooks/useFirebase";
-import { db, deleteDoc, doc, updateDoc } from "../firebase";
+import { db, deleteDoc, doc, updateDoc, collection, setDoc } from "../firebase";
 import { Vocabulary, Topic } from "../types";
 import { GoogleGenAI, Modality } from "@google/genai";
 
@@ -10,7 +10,7 @@ interface TopicListProps {
 }
 
 export default function TopicList({ onEdit }: TopicListProps) {
-  const { vocabulary, topics, progress } = useFirebase();
+  const { user, vocabulary, topics, progress } = useFirebase();
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [vocabSearch, setVocabSearch] = useState("");
   const [topicSearch, setTopicSearch] = useState("");
@@ -20,6 +20,10 @@ export default function TopicList({ onEdit }: TopicListProps) {
   const [deleteTopicId, setDeleteTopicId] = useState<string | null>(null);
   const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
   const [editTopicName, setEditTopicName] = useState("");
+  const [creatingTopic, setCreatingTopic] = useState(false);
+  const [newTopicName, setNewTopicName] = useState("");
+  const [creatingTopicLoading, setCreatingTopicLoading] = useState(false);
+  const [createTopicError, setCreateTopicError] = useState("");
   const [viewingWord, setViewingWord] = useState<Vocabulary | null>(null);
   const [isListening, setIsListening] = useState(false);
 
@@ -131,6 +135,36 @@ export default function TopicList({ onEdit }: TopicListProps) {
     }
   };
 
+  const handleCreateTopic = async () => {
+    if (!user) return;
+    const normalizedName = newTopicName.trim();
+    if (!normalizedName) return;
+
+    const topicExists = topics.some(topic => topic.name.toLowerCase() === normalizedName.toLowerCase());
+    if (topicExists) {
+      setCreateTopicError("Topic name already exists.");
+      return;
+    }
+
+    setCreatingTopicLoading(true);
+    setCreateTopicError("");
+    try {
+      const topicRef = doc(collection(db, "topics"));
+      await setDoc(topicRef, {
+        name: normalizedName,
+        userId: user.uid,
+        isUnclassified: false,
+      });
+      setCreatingTopic(false);
+      setNewTopicName("");
+    } catch (error) {
+      console.error("Create Topic Error:", error);
+      setCreateTopicError("Unable to create topic. Please try again.");
+    } finally {
+      setCreatingTopicLoading(false);
+    }
+  };
+
   useEffect(() => {
     setVisibleTopicCount(9);
   }, [topicSearch, topicSort]);
@@ -189,15 +223,27 @@ export default function TopicList({ onEdit }: TopicListProps) {
                 onChange={e => setTopicSearch(e.target.value)}
               />
             </div>
-            <select
-              className="bg-surface-container-low border-none rounded-xl px-4 py-3 text-sm font-medium text-on-surface focus:ring-2 focus:ring-primary/20"
-              value={topicSort}
-              onChange={e => setTopicSort(e.target.value as "name" | "words" | "mastered")}
-            >
-              <option value="name">Sort: A-Z</option>
-              <option value="words">Sort: Most words</option>
-              <option value="mastered">Sort: Most mastered</option>
-            </select>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <select
+                className="bg-surface-container-low border-none rounded-xl px-4 py-3 text-sm font-medium text-on-surface focus:ring-2 focus:ring-primary/20"
+                value={topicSort}
+                onChange={e => setTopicSort(e.target.value as "name" | "words" | "mastered")}
+              >
+                <option value="name">Sort: A-Z</option>
+                <option value="words">Sort: Most words</option>
+                <option value="mastered">Sort: Most mastered</option>
+              </select>
+              <button
+                type="button"
+                onClick={() => {
+                  setCreatingTopic(true);
+                  setCreateTopicError("");
+                }}
+                className="px-4 py-3 rounded-xl bg-primary text-on-primary text-sm font-bold shadow-md hover:shadow-lg active:scale-95 transition-all"
+              >
+                New Topic
+              </button>
+            </div>
           </div>
         </header>
       ) : (
@@ -530,6 +576,63 @@ export default function TopicList({ onEdit }: TopicListProps) {
                 >
                   <Save className="w-4 h-4" />
                   Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Topic Modal */}
+      {creatingTopic && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-surface-container-lowest rounded-2xl p-8 max-w-sm w-full shadow-2xl border border-outline-variant/10">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-headline font-bold text-on-background">Create Topic</h3>
+              <button
+                onClick={() => {
+                  setCreatingTopic(false);
+                  setCreateTopicError("");
+                }}
+                className="text-on-surface-variant hover:text-primary"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-6">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-on-surface-variant ml-1">Topic Name</label>
+                <input
+                  className="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20"
+                  placeholder="e.g., Daily Life"
+                  value={newTopicName}
+                  onChange={e => {
+                    setNewTopicName(e.target.value);
+                    if (createTopicError) setCreateTopicError("");
+                  }}
+                  autoFocus
+                />
+                {createTopicError && (
+                  <p className="text-sm text-error mt-2">{createTopicError}</p>
+                )}
+              </div>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => {
+                    setCreatingTopic(false);
+                    setCreateTopicError("");
+                  }}
+                  className="flex-1 py-3 rounded-xl font-bold text-on-surface-variant hover:bg-surface-container-high transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateTopic}
+                  disabled={creatingTopicLoading || !newTopicName.trim()}
+                  className="flex-1 py-3 rounded-xl bg-primary text-on-primary font-bold shadow-md hover:shadow-lg transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {creatingTopicLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  Create
                 </button>
               </div>
             </div>

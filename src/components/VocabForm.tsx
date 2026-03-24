@@ -5,6 +5,8 @@ import { useFirebase } from "../hooks/useFirebase";
 import { Vocabulary, Topic } from "../types";
 import { validateAndCompleteVocab } from "../services/aiService";
 
+const AI_DECIDE_TOPIC = "__ai_decide__";
+
 interface VocabFormProps {
   editingWord?: Vocabulary | null;
   onCancel?: () => void;
@@ -15,6 +17,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
   const { user, topics } = useFirebase();
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
+  const [selectedTopicId, setSelectedTopicId] = useState(editingWord?.topicId || AI_DECIDE_TOPIC);
   const [formData, setFormData] = useState({
     word: editingWord?.word || "",
     type: editingWord?.type || "noun",
@@ -36,6 +39,9 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
         context: editingWord.context,
         example: editingWord.example,
       });
+      setSelectedTopicId(editingWord.topicId || AI_DECIDE_TOPIC);
+    } else {
+      setSelectedTopicId(AI_DECIDE_TOPIC);
     }
   }, [editingWord]);
 
@@ -69,19 +75,23 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
     try {
       // 1. Handle Topic
       let topicId = "";
-      const topicName = aiFeedback?.topic || "General";
-      const existingTopic = topics.find(t => t.name.toLowerCase() === topicName.toLowerCase());
-
-      if (existingTopic) {
-        topicId = existingTopic.id!;
+      if (selectedTopicId !== AI_DECIDE_TOPIC) {
+        topicId = selectedTopicId;
       } else {
-        const newTopicRef = doc(collection(db, "topics"));
-        await setDoc(newTopicRef, {
-          name: topicName,
-          userId: user.uid,
-          isUnclassified: false,
-        });
-        topicId = newTopicRef.id;
+        const topicName = aiFeedback?.topic || "General";
+        const existingTopic = topics.find(t => t.name.toLowerCase() === topicName.toLowerCase());
+
+        if (existingTopic) {
+          topicId = existingTopic.id!;
+        } else {
+          const newTopicRef = doc(collection(db, "topics"));
+          await setDoc(newTopicRef, {
+            name: topicName,
+            userId: user.uid,
+            isUnclassified: false,
+          });
+          topicId = newTopicRef.id;
+        }
       }
 
       // 2. Save Vocabulary
@@ -111,6 +121,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
       // Reset
       setFormData({ word: "", type: "noun", ipa: "", meaning: "", context: "", example: "" });
       setAiFeedback(null);
+      setSelectedTopicId(AI_DECIDE_TOPIC);
       if (onSuccess) onSuccess();
     } catch (error) {
       console.error("Save Error:", error);
@@ -156,6 +167,19 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                   <option value="adjective">Adjective</option>
                   <option value="adverb">Adverb</option>
                   <option value="idiom">Idiom</option>
+                </select>
+              </div>
+              <div className="space-y-1.5 md:col-span-2">
+                <label className="text-sm font-medium text-on-surface-variant ml-1">Topic</label>
+                <select
+                  className="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20"
+                  value={selectedTopicId}
+                  onChange={e => setSelectedTopicId(e.target.value)}
+                >
+                  <option value={AI_DECIDE_TOPIC}>AI suggest & decide (auto-create if needed)</option>
+                  {topics.map((topic: Topic) => (
+                    <option key={topic.id} value={topic.id}>{topic.name}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -223,7 +247,14 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
               <div className="grid grid-cols-1 sm:flex gap-3 sm:gap-4 w-full sm:w-auto">
                 <button 
                   type="button"
-                  onClick={() => onCancel ? onCancel() : setFormData({ word: "", type: "noun", ipa: "", meaning: "", context: "", example: "" })}
+                  onClick={() => {
+                    if (onCancel) {
+                      onCancel();
+                      return;
+                    }
+                    setFormData({ word: "", type: "noun", ipa: "", meaning: "", context: "", example: "" });
+                    setSelectedTopicId(AI_DECIDE_TOPIC);
+                  }}
                   className="w-full sm:w-auto px-6 py-2.5 rounded-lg font-bold text-on-surface-variant hover:bg-surface-container-high"
                 >
                   {editingWord ? "Cancel" : "Discard"}

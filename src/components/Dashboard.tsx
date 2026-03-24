@@ -17,22 +17,22 @@ export default function Dashboard({ setActiveTab }: { setActiveTab: (tab: string
   const learningCount = progress.filter(p => p.status === "learning").length;
 
   return (
-    <div className="space-y-10">
-      <header className="mb-10">
-        <h1 className="text-4xl font-headline font-extrabold text-on-background tracking-tight mb-2">Welcome back, {user?.displayName?.split(" ")[0]}</h1>
-        <p className="text-on-surface-variant font-body">You're on a <span className="text-primary font-bold">12-day streak</span>. Ready for your morning session?</p>
+    <div className="space-y-8 sm:space-y-10">
+      <header className="mb-8 sm:mb-10">
+        <h1 className="text-3xl sm:text-4xl font-headline font-extrabold text-on-background tracking-tight mb-2">Welcome back, {user?.displayName?.split(" ")[0]}</h1>
+        <p className="text-sm sm:text-base text-on-surface-variant font-body">You're on a <span className="text-primary font-bold">12-day streak</span>. Ready for your morning session?</p>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
         {/* Today's Goal Card */}
-        <section className="md:col-span-8 bg-surface-container-low rounded-[2.5rem] p-8 flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden group">
+        <section className="md:col-span-8 bg-surface-container-low rounded-3xl sm:rounded-[2.5rem] p-5 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 sm:gap-8 relative overflow-hidden group">
           <div className="relative z-10 flex-1">
             <span className="text-primary font-bold text-xs uppercase tracking-widest mb-2 block">Today's Focus</span>
-            <h2 className="text-3xl font-headline font-bold text-on-background mb-4">You have {dueCount} words to review</h2>
-            <div className="flex items-center gap-4">
+            <h2 className="text-2xl sm:text-3xl font-headline font-bold text-on-background mb-4">You have {dueCount} words to review</h2>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <button 
                 onClick={() => setActiveTab("flashcards")}
-                className="bg-primary text-on-primary px-8 py-3 rounded-full font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-transform flex items-center gap-2"
+                className="w-full sm:w-auto bg-primary text-on-primary px-6 sm:px-8 py-3 rounded-full font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-transform flex items-center justify-center gap-2"
               >
                 <Play className="w-4 h-4 fill-current" />
                 Start Review
@@ -45,7 +45,7 @@ export default function Dashboard({ setActiveTab }: { setActiveTab: (tab: string
           </div>
           
           {/* Circular Progress */}
-          <div className="relative w-40 h-40 flex items-center justify-center">
+          <div className="relative w-32 h-32 sm:w-40 sm:h-40 mx-auto md:mx-0 flex items-center justify-center">
             <svg className="w-full h-full transform -rotate-90">
               <circle className="text-surface-container-highest" cx="80" cy="80" fill="transparent" r="70" stroke="currentColor" strokeWidth="8" />
               <circle 
@@ -56,7 +56,7 @@ export default function Dashboard({ setActiveTab }: { setActiveTab: (tab: string
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-3xl font-headline font-extrabold text-primary">
+              <span className="text-2xl sm:text-3xl font-headline font-extrabold text-primary">
                 {Math.round((masteredCount / (vocabulary.length || 1)) * 100)}%
               </span>
             </div>
@@ -64,7 +64,7 @@ export default function Dashboard({ setActiveTab }: { setActiveTab: (tab: string
         </section>
 
         {/* Stats Card */}
-        <section className="md:col-span-4 bg-surface-container-lowest p-6 rounded-xl shadow-sm flex flex-col justify-between border border-outline-variant/10">
+        <section className="md:col-span-4 bg-surface-container-lowest p-5 sm:p-6 rounded-xl shadow-sm flex flex-col justify-between border border-outline-variant/10">
           <div>
             <h3 className="font-headline font-bold text-lg mb-1">Knowledge Growth</h3>
             <p className="text-sm text-on-surface-variant mb-6">Mastered vs. Learning words</p>
@@ -96,22 +96,22 @@ export default function Dashboard({ setActiveTab }: { setActiveTab: (tab: string
         </section>
 
         {/* Recent Topics */}
-        <section className="md:col-span-12 mt-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-headline font-bold text-on-background">Recent Topics</h2>
+        <section className="md:col-span-12 mt-4 sm:mt-8">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-2xl font-headline font-bold text-on-background">Recent Topics</h2>
             <button onClick={() => setActiveTab("topics")} className="text-primary font-bold text-sm hover:underline">View All</button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
             {topics.slice(0, 3).map(topic => {
               const topicVocab = vocabulary.filter(v => v.topicId === topic.id);
               return (
                 <div 
                   key={topic.id}
                   onClick={() => setActiveTab("topics")}
-                  className="flex items-center gap-4 bg-surface-container-low p-4 rounded-xl group hover:shadow-md transition-shadow cursor-pointer"
+                  className="flex items-center gap-3 sm:gap-4 bg-surface-container-low p-4 rounded-xl group hover:shadow-md transition-shadow cursor-pointer"
                 >
-                  <div className="w-16 h-16 rounded-lg bg-primary-container flex items-center justify-center text-primary flex-shrink-0">
-                    <TrendingUp className="w-8 h-8" />
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg bg-primary-container flex items-center justify-center text-primary flex-shrink-0">
+                    <TrendingUp className="w-7 h-7 sm:w-8 sm:h-8" />
                   </div>
                   <div className="flex-1">
                     <h5 className="font-headline font-bold text-on-background">{topic.name}</h5>

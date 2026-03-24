@@ -120,18 +120,18 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <section>
-        <h1 className="text-4xl font-headline font-extrabold text-on-background tracking-tight mb-2">
+        <h1 className="text-3xl sm:text-4xl font-headline font-extrabold text-on-background tracking-tight mb-2">
           {editingWord ? "Edit Word" : "Add New Word"}
         </h1>
-        <p className="text-on-surface-variant text-lg">
+        <p className="text-on-surface-variant text-base sm:text-lg">
           {editingWord ? "Refine your cognitive sanctuary." : "Expand your cognitive sanctuary, one term at a time."}
         </p>
       </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-8 bg-surface-container-lowest rounded-xl p-8 shadow-sm border border-outline-variant/10">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
+        <div className="lg:col-span-8 bg-surface-container-lowest rounded-xl p-4 sm:p-8 shadow-sm border border-outline-variant/10">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-1.5">
@@ -161,7 +161,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-on-surface-variant ml-1 flex justify-between">
+              <label className="text-sm font-medium text-on-surface-variant ml-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
                 <span>IPA Pronunciation</span>
                 {aiFeedback?.ipa && (
                   <span className="text-xs text-primary font-medium flex items-center gap-1">
@@ -210,28 +210,28 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
               </div>
             </div>
 
-            <div className="pt-4 flex items-center justify-between">
+            <div className="pt-2 sm:pt-4 flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
               <button 
                 type="button"
                 onClick={handleAiValidate}
                 disabled={aiLoading || !formData.word}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-lg font-bold text-primary hover:bg-primary-container transition-all disabled:opacity-50"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg font-bold text-primary hover:bg-primary-container transition-all disabled:opacity-50"
               >
                 {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                 AI Validate & Complete
               </button>
-              <div className="flex gap-4">
+              <div className="grid grid-cols-1 sm:flex gap-3 sm:gap-4 w-full sm:w-auto">
                 <button 
                   type="button"
                   onClick={() => onCancel ? onCancel() : setFormData({ word: "", type: "noun", ipa: "", meaning: "", context: "", example: "" })}
-                  className="px-6 py-2.5 rounded-lg font-bold text-on-surface-variant hover:bg-surface-container-high"
+                  className="w-full sm:w-auto px-6 py-2.5 rounded-lg font-bold text-on-surface-variant hover:bg-surface-container-high"
                 >
                   {editingWord ? "Cancel" : "Discard"}
                 </button>
                 <button 
                   type="submit"
                   disabled={loading || !formData.word}
-                  className="bg-primary text-on-primary px-8 py-2.5 rounded-lg font-bold shadow-md hover:shadow-lg active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2"
+                  className="w-full sm:w-auto bg-primary text-on-primary px-8 py-2.5 rounded-lg font-bold shadow-md hover:shadow-lg active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                   Save to Sanctuary
@@ -242,7 +242,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
         </div>
 
         <aside className="lg:col-span-4 space-y-6">
-          <div className="bg-surface-container-high rounded-xl p-6 border border-white/40 shadow-xl backdrop-blur-md">
+          <div className="bg-surface-container-high rounded-xl p-5 sm:p-6 border border-white/40 shadow-xl backdrop-blur-md">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-on-primary">
                 <Sparkles className="w-5 h-5" />

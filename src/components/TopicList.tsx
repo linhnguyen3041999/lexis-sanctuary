@@ -136,16 +136,16 @@ export default function TopicList({ onEdit }: TopicListProps) {
   });
 
   return (
-    <div className="space-y-12">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+    <div className="space-y-8 sm:space-y-12">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 sm:gap-6">
         <div className="max-w-2xl">
-          <h2 className="text-4xl font-headline font-extrabold text-on-background tracking-tight mb-3">Topic Exploration</h2>
-          <p className="text-on-surface-variant text-lg">Organize your lexicon by semantic domains. Monitor your progress through each conceptual landscape.</p>
+          <h2 className="text-3xl sm:text-4xl font-headline font-extrabold text-on-background tracking-tight mb-2 sm:mb-3">Topic Exploration</h2>
+          <p className="text-on-surface-variant text-base sm:text-lg">Organize your lexicon by semantic domains. Monitor your progress through each conceptual landscape.</p>
         </div>
       </header>
 
       {/* Topics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {topics.map(topic => {
           const topicVocab = vocabulary.filter(v => v.topicId === topic.id);
           const masteredCount = topicVocab.filter(v => {
@@ -157,11 +157,11 @@ export default function TopicList({ onEdit }: TopicListProps) {
             <div 
               key={topic.id}
               onClick={() => setSelectedTopic(selectedTopic === topic.id ? null : topic.id)}
-              className={`group relative bg-surface-container-lowest rounded-xl p-8 transition-all duration-300 cursor-pointer flex flex-col justify-between h-64 shadow-sm border-2 ${
+              className={`group relative bg-surface-container-lowest rounded-xl p-5 sm:p-8 transition-all duration-300 cursor-pointer flex flex-col justify-between min-h-48 sm:h-64 shadow-sm border-2 ${
                 selectedTopic === topic.id ? "border-primary bg-primary-container" : "border-transparent hover:border-primary/10"
               }`}
             >
-              <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
@@ -183,10 +183,10 @@ export default function TopicList({ onEdit }: TopicListProps) {
                 </button>
               </div>
               <div>
-                <h3 className="text-2xl font-headline font-bold mb-2">{topic.name}</h3>
+                <h3 className="text-xl sm:text-2xl font-headline font-bold mb-2">{topic.name}</h3>
                 <p className="text-on-surface-variant text-sm">{topicVocab.length} Words • {masteredCount} Mastered</p>
               </div>
-              <div className="flex gap-4 mt-6">
+              <div className="flex gap-4 mt-4 sm:mt-6">
                 <div className="flex flex-col">
                   <span className="text-xs font-bold text-on-surface-variant uppercase tracking-tighter">Total</span>
                   <span className="text-xl font-headline font-bold">{topicVocab.length}</span>
@@ -202,16 +202,16 @@ export default function TopicList({ onEdit }: TopicListProps) {
       </div>
 
       {/* Table Section */}
-      <section className="bg-surface-container-low rounded-3xl overflow-hidden shadow-sm">
-        <div className="p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <section className="bg-surface-container-low rounded-2xl sm:rounded-3xl overflow-hidden shadow-sm">
+        <div className="p-4 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
           <div className="flex flex-col">
-            <h4 className="text-xl font-headline font-bold text-on-background">
+            <h4 className="text-lg sm:text-xl font-headline font-bold text-on-background">
               {selectedTopic ? topics.find(t => t.id === selectedTopic)?.name : "All Vocabulary"}
             </h4>
             <p className="text-sm text-on-surface-variant">Showing {filteredVocab.length} terms</p>
           </div>
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="relative min-w-[300px]">
+          <div className="flex w-full md:w-auto flex-wrap items-center gap-3 sm:gap-4">
+            <div className="relative w-full md:w-auto md:min-w-[300px]">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5" />
               <input 
                 className="w-full pl-12 pr-4 py-3 bg-surface-container-lowest border-none rounded-xl focus:ring-2 focus:ring-primary/20"
@@ -229,8 +229,8 @@ export default function TopicList({ onEdit }: TopicListProps) {
           </div>
         </div>
 
-        <div className="px-8 pb-8">
-          <div className="overflow-x-auto">
+        <div className="px-4 sm:px-8 pb-4 sm:pb-8">
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-separate border-spacing-y-3">
               <thead>
                 <tr className="text-on-surface-variant text-xs font-bold uppercase tracking-widest">
@@ -291,6 +291,60 @@ export default function TopicList({ onEdit }: TopicListProps) {
                 })}
               </tbody>
             </table>
+          </div>
+
+          <div className="md:hidden space-y-3">
+            {filteredVocab.map(v => {
+              const p = progress.find(pr => pr.wordId === v.id);
+              return (
+                <div
+                  key={v.id}
+                  onClick={() => setViewingWord(v)}
+                  className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/10"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h5 className="font-headline font-bold text-lg text-on-background leading-tight">{v.word}</h5>
+                      <p className="text-xs text-primary font-mono mt-1">{v.ipa}</p>
+                    </div>
+                    <span className={`px-2.5 py-1 text-[10px] font-bold rounded-full uppercase ${
+                      p?.status === "mastered" ? "bg-secondary-container text-on-secondary-container" :
+                      p?.status === "learning" ? "bg-primary-container text-primary" :
+                      "bg-surface-container-highest text-on-surface-variant"
+                    }`}>
+                      {p?.status || "new"}
+                    </span>
+                  </div>
+                  <p className="text-sm text-on-surface-variant mt-2 line-clamp-2">{v.meaning}</p>
+                  <div className="mt-3 flex items-center justify-between">
+                    <span className="text-xs text-on-surface-variant capitalize">{v.type}</span>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEdit && onEdit(v);
+                        }}
+                        className="p-2 text-on-surface-variant hover:text-primary transition-colors"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteId(v.id!);
+                        }}
+                        className="p-2 text-on-surface-variant hover:text-error transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            {filteredVocab.length === 0 && (
+              <div className="text-center py-8 text-sm text-on-surface-variant">No terms found.</div>
+            )}
           </div>
         </div>
       </section>
@@ -398,13 +452,13 @@ export default function TopicList({ onEdit }: TopicListProps) {
       {/* Word Detail Modal */}
       {viewingWord && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-surface-container-lowest rounded-3xl p-8 max-w-2xl w-full shadow-2xl border border-outline-variant/10 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-4">
-                <div className="px-4 py-2 bg-primary-container text-primary rounded-xl font-headline font-bold text-2xl">
+          <div className="bg-surface-container-lowest rounded-3xl p-4 sm:p-8 max-w-2xl w-full shadow-2xl border border-outline-variant/10 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start sm:items-center justify-between mb-6 sm:mb-8 gap-3">
+              <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0">
+                <div className="px-3 sm:px-4 py-2 bg-primary-container text-primary rounded-xl font-headline font-bold text-xl sm:text-2xl truncate max-w-[180px] sm:max-w-none">
                   {viewingWord.word}
                 </div>
-                <span className="text-on-surface-variant font-mono text-lg">{viewingWord.ipa}</span>
+                <span className="text-on-surface-variant font-mono text-sm sm:text-lg break-all">{viewingWord.ipa}</span>
                 <button 
                   onClick={() => handleListen(viewingWord.word)}
                   disabled={isListening}
@@ -422,11 +476,11 @@ export default function TopicList({ onEdit }: TopicListProps) {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+              <div className="space-y-5 sm:space-y-6">
                 <section>
                   <h5 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Meaning</h5>
-                  <p className="text-lg text-on-background leading-relaxed">{viewingWord.meaning}</p>
+                  <p className="text-base sm:text-lg text-on-background leading-relaxed">{viewingWord.meaning}</p>
                 </section>
                 <section>
                   <h5 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Type</h5>
@@ -442,7 +496,7 @@ export default function TopicList({ onEdit }: TopicListProps) {
                 </section>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-5 sm:space-y-6">
                 <section>
                   <h5 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Context</h5>
                   <p className="text-on-surface-variant italic leading-relaxed">"{viewingWord.context}"</p>
@@ -456,13 +510,13 @@ export default function TopicList({ onEdit }: TopicListProps) {
               </div>
             </div>
 
-            <div className="mt-10 pt-8 border-t border-outline-variant/10 flex justify-end gap-4">
+            <div className="mt-8 sm:mt-10 pt-6 sm:pt-8 border-t border-outline-variant/10 flex flex-col-reverse sm:flex-row justify-end gap-3 sm:gap-4">
               <button 
                 onClick={() => {
                   setViewingWord(null);
                   setDeleteId(viewingWord.id!);
                 }}
-                className="px-6 py-3 rounded-xl font-bold text-error hover:bg-error-container/50 transition-colors"
+                className="w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-error hover:bg-error-container/50 transition-colors"
               >
                 Delete
               </button>
@@ -472,7 +526,7 @@ export default function TopicList({ onEdit }: TopicListProps) {
                   setViewingWord(null);
                   onEdit && onEdit(word);
                 }}
-                className="px-8 py-3 rounded-xl bg-primary text-on-primary font-bold shadow-md hover:shadow-lg transition-all active:scale-95 flex items-center gap-2"
+                className="w-full sm:w-auto px-8 py-3 rounded-xl bg-primary text-on-primary font-bold shadow-md hover:shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2"
               >
                 <Edit className="w-5 h-5" />
                 Edit Word

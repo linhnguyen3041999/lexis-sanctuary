@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Volume2, Edit, Star, FlipHorizontal, CheckCircle2, Loader2, Sparkles } from "lucide-react";
 import { db, updateDoc, doc } from "../firebase";
 import { useFirebase } from "../hooks/useFirebase";
@@ -13,6 +13,9 @@ export default function Flashcard() {
   const [flipped, setFlipped] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [cardHeight, setCardHeight] = useState(0);
+  const frontMeasureRef = useRef<HTMLDivElement | null>(null);
+  const backMeasureRef = useRef<HTMLDivElement | null>(null);
 
   const handleListen = async (text: string) => {
     if (isListening) return;
@@ -94,6 +97,23 @@ export default function Flashcard() {
     }
   }, [dueWords.length, currentIndex]);
 
+  useEffect(() => {
+    const updateCardHeight = () => {
+      const frontHeight = frontMeasureRef.current?.getBoundingClientRect().height || 0;
+      const backHeight = backMeasureRef.current?.getBoundingClientRect().height || 0;
+      const nextHeight = Math.ceil(Math.max(frontHeight, backHeight, 320));
+      setCardHeight(nextHeight);
+    };
+
+    const frame = window.requestAnimationFrame(updateCardHeight);
+    window.addEventListener("resize", updateCardHeight);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", updateCardHeight);
+    };
+  }, [currentWord]);
+
   const handleReview = async (level: SRSLevel) => {
     if (!currentProgress || !currentWord) return;
     setLoading(true);
@@ -130,7 +150,7 @@ export default function Flashcard() {
 
   return (
     <div className="max-w-2xl mx-auto flex flex-col items-center">
-      <div className="w-full mb-8">
+      <div className="w-full mb-6 sm:mb-8">
         <div className="flex justify-between items-end mb-2">
           <span className="text-xs font-bold text-primary tracking-widest uppercase">Session Progress</span>
           <span className="text-xs text-on-surface-variant font-medium">{currentIndex + 1} / {dueWords.length}</span>
@@ -143,33 +163,54 @@ export default function Flashcard() {
         </div>
       </div>
 
-      <div 
-        className="w-full aspect-[4/3] md:aspect-[16/10] perspective-1000 cursor-pointer group"
-        onClick={() => !loading && setFlipped(!flipped)}
-      >
-        <div className={`relative w-full h-full transition-all duration-500 transform-style-3d ${flipped ? "rotate-y-180" : ""}`}>
-          {/* Front */}
-          <div className="absolute inset-0 backface-hidden bg-surface-container-lowest rounded-xl p-8 md:p-12 flex flex-col items-center justify-center text-center shadow-sm border border-outline-variant/10">
-            <span className="text-sm md:text-base text-primary/70 mb-4 tracking-widest uppercase font-medium">{currentWord?.ipa}</span>
-            <h1 className="text-5xl md:text-7xl font-headline font-extrabold text-on-background tracking-tighter mb-6 leading-none">{currentWord?.word}</h1>
-            <div className="h-px w-16 bg-surface-container-high mx-auto mb-8"></div>
-            <p className="text-on-surface-variant text-sm font-medium">Click to reveal meaning</p>
-            <div className="absolute top-6 right-6 flex items-center gap-2 text-on-surface-variant/40">
-              <span className="text-[10px] uppercase font-bold tracking-tighter">Flip Card</span>
-              <FlipHorizontal className="w-5 h-5" />
+      <div className="relative w-full">
+        <div className="absolute inset-x-0 top-0 opacity-0 pointer-events-none -z-10">
+          <div ref={frontMeasureRef} className="bg-surface-container-lowest rounded-xl p-5 sm:p-8 md:p-12 border border-outline-variant/10">
+            <span className="text-sm md:text-base text-primary/70 mb-4 block tracking-widest font-medium break-all">{currentWord?.ipa?.toLowerCase()}</span>
+            <h1 className="text-4xl sm:text-5xl md:text-7xl font-headline font-extrabold text-on-background tracking-tighter mb-4 sm:mb-6 leading-none break-words">{currentWord?.word}</h1>
+            <div className="h-px w-16 bg-surface-container-high mx-auto mb-6 sm:mb-8"></div>
+            <p className="text-on-surface-variant text-sm font-medium text-center">Click to reveal meaning</p>
+          </div>
+          <div ref={backMeasureRef} className="bg-surface-container-lowest rounded-xl p-5 sm:p-8 md:p-12 border border-outline-variant/10">
+            <span className="text-sm md:text-base text-primary/70 mb-4 block tracking-widest font-medium break-all">{currentWord?.ipa?.toLowerCase()}</span>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-headline font-extrabold text-on-background tracking-tighter mb-4 sm:mb-6 leading-none break-words text-center">{currentWord?.word}</h1>
+            <div className="h-px w-16 bg-surface-container-high mx-auto mb-6 sm:mb-8"></div>
+            <div className="space-y-3 sm:space-y-4 max-w-lg mx-auto w-full">
+              <p className="text-base sm:text-lg md:text-xl text-on-surface font-medium leading-relaxed text-center">{currentWord?.meaning}</p>
+              <div className="bg-surface-container-low p-4 rounded-lg text-sm italic text-on-surface-variant text-left border-l-2 border-primary/30">
+                "{currentWord?.example}"
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* Back */}
-          <div className="absolute inset-0 backface-hidden rotate-y-180 bg-surface-container-lowest rounded-xl p-8 md:p-12 flex flex-col items-center justify-center text-center shadow-sm border border-outline-variant/10">
-            <div className="relative z-10 w-full">
-              <span className="text-sm md:text-base text-primary/70 mb-4 block tracking-widest uppercase font-medium">{currentWord?.ipa}</span>
-              <h1 className="text-4xl md:text-5xl font-headline font-extrabold text-on-background tracking-tighter mb-6 leading-none">{currentWord?.word}</h1>
-              <div className="h-px w-16 bg-surface-container-high mx-auto mb-8"></div>
-              <div className="space-y-4 max-w-lg mx-auto">
-                <p className="text-lg md:text-xl text-on-surface font-medium leading-relaxed">{currentWord?.meaning}</p>
-                <div className="bg-surface-container-low p-4 rounded-lg text-sm italic text-on-surface-variant text-left border-l-2 border-primary/30">
-                  "{currentWord?.example}"
+        <div
+          className="w-full perspective-1000 cursor-pointer group"
+          style={{ height: cardHeight > 0 ? `${cardHeight}px` : undefined }}
+          onClick={() => !loading && setFlipped(!flipped)}
+        >
+          <div className={`relative w-full h-full transition-all duration-500 transform-style-3d ${flipped ? "rotate-y-180" : ""}`}>
+            <div className="absolute inset-0 backface-hidden bg-surface-container-lowest rounded-xl p-5 sm:p-8 md:p-12 flex flex-col items-center justify-center text-center shadow-sm border border-outline-variant/10 overflow-hidden">
+              <span className="text-sm md:text-base text-primary/70 mb-4 tracking-widest font-medium break-all">{currentWord?.ipa?.toLowerCase()}</span>
+              <h1 className="text-4xl sm:text-5xl md:text-7xl font-headline font-extrabold text-on-background tracking-tighter mb-4 sm:mb-6 leading-none break-words">{currentWord?.word}</h1>
+              <div className="h-px w-16 bg-surface-container-high mx-auto mb-6 sm:mb-8"></div>
+              <p className="text-on-surface-variant text-sm font-medium">Click to reveal meaning</p>
+              <div className="absolute top-4 right-4 sm:top-6 sm:right-6 flex items-center gap-2 text-on-surface-variant/40">
+                <span className="text-[10px] uppercase font-bold tracking-tighter">Flip Card</span>
+                <FlipHorizontal className="w-5 h-5" />
+              </div>
+            </div>
+
+            <div className="absolute inset-0 backface-hidden rotate-y-180 bg-surface-container-lowest rounded-xl p-5 sm:p-8 md:p-12 flex flex-col items-stretch justify-start text-center shadow-sm border border-outline-variant/10 overflow-y-auto">
+              <div className="relative z-10 w-full">
+                <span className="text-sm md:text-base text-primary/70 mb-4 block tracking-widest font-medium break-all">{currentWord?.ipa?.toLowerCase()}</span>
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-headline font-extrabold text-on-background tracking-tighter mb-4 sm:mb-6 leading-none break-words">{currentWord?.word}</h1>
+                <div className="h-px w-16 bg-surface-container-high mx-auto mb-6 sm:mb-8"></div>
+                <div className="space-y-3 sm:space-y-4 max-w-lg mx-auto">
+                  <p className="text-base sm:text-lg md:text-xl text-on-surface font-medium leading-relaxed">{currentWord?.meaning}</p>
+                  <div className="bg-surface-container-low p-4 rounded-lg text-sm italic text-on-surface-variant text-left border-l-2 border-primary/30">
+                    "{currentWord?.example}"
+                  </div>
                 </div>
               </div>
             </div>
@@ -178,8 +219,8 @@ export default function Flashcard() {
       </div>
 
       {flipped && (
-        <div className="w-full mt-12 space-y-8">
-          <div className="bg-surface-container-low rounded-full p-2 flex items-center justify-between gap-2 shadow-sm">
+        <div className="w-full mt-8 sm:mt-12 space-y-6 sm:space-y-8">
+          <div className="bg-surface-container-low rounded-2xl sm:rounded-full p-2 grid grid-cols-2 sm:flex sm:items-center sm:justify-between gap-2 shadow-sm">
             {[
               { id: "again", label: "Again", time: "< 1m", color: "text-error" },
               { id: "hard", label: "Hard", time: "2d", color: "text-secondary" },
@@ -190,7 +231,7 @@ export default function Flashcard() {
                 key={lvl.id}
                 disabled={loading}
                 onClick={() => handleReview(lvl.id as SRSLevel)}
-                className={`flex-1 flex flex-col items-center py-3 px-4 rounded-full hover:bg-white transition-all active:scale-95 group disabled:opacity-50`}
+                className={`sm:flex-1 flex flex-col items-center py-3 px-4 rounded-xl sm:rounded-full hover:bg-white transition-all active:scale-95 group disabled:opacity-50`}
               >
                 <span className="text-[10px] font-bold tracking-widest text-on-surface-variant uppercase mb-1">{lvl.label}</span>
                 <span className={`text-lg font-headline font-extrabold ${lvl.color}`}>{lvl.time}</span>
@@ -198,7 +239,7 @@ export default function Flashcard() {
             ))}
           </div>
 
-          <div className="flex gap-8 items-center justify-center text-on-surface-variant">
+          <div className="flex gap-6 items-center justify-center text-on-surface-variant">
             <button 
               onClick={(e) => {
                 e.stopPropagation();

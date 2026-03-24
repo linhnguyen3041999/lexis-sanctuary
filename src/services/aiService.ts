@@ -1,4 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
+import { desc } from "motion/react-client";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
@@ -41,9 +42,9 @@ export async function validateAndCompleteVocab(formData: any): Promise<VocabVali
           word: { type: Type.STRING },
           type: { type: Type.STRING },
           ipa: { type: Type.STRING },
-          meaning: { type: Type.STRING },
-          context: { type: Type.STRING },
-          example: { type: Type.STRING },
+          meaning: { type: Type.STRING, description: "A concise definition of the word in Vietnamese" },
+          context: { type: Type.STRING, description: "A brief description of the typical usage context for the word in English" },
+          example: { type: Type.STRING, description: "A sentence demonstrating the usage of the word" },
           topic: { type: Type.STRING, description: "A single high-level category name" },
           isCorrect: { type: Type.BOOLEAN, description: "Whether the original input was mostly correct" },
           suggestions: { type: Type.STRING, description: "Brief explanation of changes made" }

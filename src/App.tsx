@@ -14,6 +14,15 @@ import { Vocabulary } from "./types";
 export default function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [topicEditingWord, setTopicEditingWord] = useState<Vocabulary | null>(null);
+  const [topicResetSignal, setTopicResetSignal] = useState(0);
+
+  const handleSidebarTabChange = (tab: string) => {
+    if (tab === "topics") {
+      setTopicEditingWord(null);
+      setTopicResetSignal(prev => prev + 1);
+    }
+    setActiveTab(tab);
+  };
 
   const handleEditWord = (word: Vocabulary) => {
     setTopicEditingWord(word);
@@ -27,7 +36,7 @@ export default function App() {
   }, [activeTab]);
 
   return (
-    <Layout activeTab={activeTab} setActiveTab={setActiveTab}>
+    <Layout activeTab={activeTab} setActiveTab={handleSidebarTabChange}>
       {activeTab === "dashboard" && <Dashboard setActiveTab={setActiveTab} />}
       {activeTab === "vocabulary" && <VocabForm />}
       {activeTab === "flashcards" && <Flashcard />}
@@ -39,7 +48,7 @@ export default function App() {
             onSuccess={() => setTopicEditingWord(null)}
           />
         ) : (
-          <TopicList onEdit={handleEditWord} />
+          <TopicList onEdit={handleEditWord} resetToRootSignal={topicResetSignal} />
         )
       )}
     </Layout>

@@ -642,8 +642,14 @@ export default function TopicList({ onEdit }: TopicListProps) {
 
       {/* Word Detail Modal */}
       {viewingWord && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-surface-container-lowest rounded-3xl p-4 sm:p-8 max-w-2xl w-full shadow-2xl border border-outline-variant/10 max-h-[90vh] overflow-y-auto">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          onClick={() => setViewingWord(null)}
+        >
+          <div
+            className="bg-surface-container-lowest rounded-3xl p-4 sm:p-8 max-w-2xl w-full shadow-2xl border border-outline-variant/10 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-start sm:items-center justify-between mb-6 sm:mb-8 gap-3">
               <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0">
                 <div className="px-3 sm:px-4 py-2 bg-primary-container text-primary rounded-xl font-headline font-bold text-xl sm:text-2xl truncate max-w-[180px] sm:max-w-none">

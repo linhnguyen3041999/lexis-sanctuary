@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Search, Filter, Download, Edit, ChevronLeft, ChevronRight, Play, Trash2, X, Save, Volume2, Loader2 } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { Search, Filter, Download, Edit, ChevronLeft, Trash2, X, Save, Volume2, Loader2 } from "lucide-react";
 import { useFirebase } from "../hooks/useFirebase";
 import { db, deleteDoc, doc, updateDoc } from "../firebase";
 import { Vocabulary, Topic } from "../types";
@@ -12,7 +12,10 @@ interface TopicListProps {
 export default function TopicList({ onEdit }: TopicListProps) {
   const { vocabulary, topics, progress } = useFirebase();
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
+  const [vocabSearch, setVocabSearch] = useState("");
+  const [topicSearch, setTopicSearch] = useState("");
+  const [topicSort, setTopicSort] = useState<"name" | "words" | "mastered">("name");
+  const [visibleTopicCount, setVisibleTopicCount] = useState(9);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteTopicId, setDeleteTopicId] = useState<string | null>(null);
   const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
@@ -128,85 +131,169 @@ export default function TopicList({ onEdit }: TopicListProps) {
     }
   };
 
+  useEffect(() => {
+    setVisibleTopicCount(9);
+  }, [topicSearch, topicSort]);
+
+  const topicCards = useMemo(() => {
+    const enriched = topics.map(topic => {
+      const topicVocab = vocabulary.filter(v => v.topicId === topic.id);
+      const masteredCount = topicVocab.filter(v => {
+        const p = progress.find(pr => pr.wordId === v.id);
+        return p?.status === "mastered";
+      }).length;
+
+      return {
+        topic,
+        totalWords: topicVocab.length,
+        masteredCount,
+      };
+    });
+
+    const filtered = enriched.filter(({ topic }) =>
+      topic.name.toLowerCase().includes(topicSearch.toLowerCase())
+    );
+
+    return filtered.sort((a, b) => {
+      if (topicSort === "words") return b.totalWords - a.totalWords;
+      if (topicSort === "mastered") return b.masteredCount - a.masteredCount;
+      return a.topic.name.localeCompare(b.topic.name);
+    });
+  }, [topics, vocabulary, progress, topicSearch, topicSort]);
+
+  const selectedTopicInfo = topicCards.find(item => item.topic.id === selectedTopic);
+
   const filteredVocab = vocabulary.filter(v => {
-    const matchesTopic = !selectedTopic || v.topicId === selectedTopic;
-    const matchesSearch = v.word.toLowerCase().includes(search.toLowerCase()) || 
-                         v.meaning.toLowerCase().includes(search.toLowerCase());
+    const matchesTopic = selectedTopic ? v.topicId === selectedTopic : false;
+    const matchesSearch = v.word.toLowerCase().includes(vocabSearch.toLowerCase()) ||
+                         v.meaning.toLowerCase().includes(vocabSearch.toLowerCase());
     return matchesTopic && matchesSearch;
   });
 
   return (
     <div className="space-y-8 sm:space-y-12">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 sm:gap-6">
-        <div className="max-w-2xl">
-          <h2 className="text-3xl sm:text-4xl font-headline font-extrabold text-on-background tracking-tight mb-2 sm:mb-3">Topic Exploration</h2>
-          <p className="text-on-surface-variant text-base sm:text-lg">Organize your lexicon by semantic domains. Monitor your progress through each conceptual landscape.</p>
-        </div>
-      </header>
+      {!selectedTopic ? (
+        <header className="space-y-4 sm:space-y-6">
+          <div className="max-w-2xl">
+            <h2 className="text-3xl sm:text-4xl font-headline font-extrabold text-on-background tracking-tight mb-2 sm:mb-3">Topic Exploration</h2>
+            <p className="text-on-surface-variant text-base sm:text-lg">Organize your lexicon by semantic domains. Monitor your progress through each conceptual landscape.</p>
+          </div>
 
-      {/* Topics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-        {topics.map(topic => {
-          const topicVocab = vocabulary.filter(v => v.topicId === topic.id);
-          const masteredCount = topicVocab.filter(v => {
-            const p = progress.find(pr => pr.wordId === v.id);
-            return p?.status === "mastered";
-          }).length;
-
-          return (
-            <div 
-              key={topic.id}
-              onClick={() => setSelectedTopic(selectedTopic === topic.id ? null : topic.id)}
-              className={`group relative bg-surface-container-lowest rounded-xl p-5 sm:p-8 transition-all duration-300 cursor-pointer flex flex-col justify-between min-h-48 sm:h-64 shadow-sm border-2 ${
-                selectedTopic === topic.id ? "border-primary bg-primary-container" : "border-transparent hover:border-primary/10"
-              }`}
-            >
-              <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setEditingTopic(topic);
-                    setEditTopicName(topic.name);
-                  }}
-                  className="p-2 bg-surface-container-high rounded-full text-on-surface-variant hover:text-primary transition-colors"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setDeleteTopicId(topic.id!);
-                  }}
-                  className="p-2 bg-surface-container-high rounded-full text-on-surface-variant hover:text-error transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-              <div>
-                <h3 className="text-xl sm:text-2xl font-headline font-bold mb-2">{topic.name}</h3>
-                <p className="text-on-surface-variant text-sm">{topicVocab.length} Words • {masteredCount} Mastered</p>
-              </div>
-              <div className="flex gap-4 mt-4 sm:mt-6">
-                <div className="flex flex-col">
-                  <span className="text-xs font-bold text-on-surface-variant uppercase tracking-tighter">Total</span>
-                  <span className="text-xl font-headline font-bold">{topicVocab.length}</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xs font-bold text-on-surface-variant uppercase tracking-tighter">Mastered</span>
-                  <span className="text-xl font-headline font-bold text-primary">{masteredCount}</span>
-                </div>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 sm:gap-4">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5" />
+              <input
+                className="w-full pl-12 pr-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/20"
+                placeholder="Search topics..."
+                value={topicSearch}
+                onChange={e => setTopicSearch(e.target.value)}
+              />
             </div>
-          );
-        })}
-      </div>
+            <select
+              className="bg-surface-container-low border-none rounded-xl px-4 py-3 text-sm font-medium text-on-surface focus:ring-2 focus:ring-primary/20"
+              value={topicSort}
+              onChange={e => setTopicSort(e.target.value as "name" | "words" | "mastered")}
+            >
+              <option value="name">Sort: A-Z</option>
+              <option value="words">Sort: Most words</option>
+              <option value="mastered">Sort: Most mastered</option>
+            </select>
+          </div>
+        </header>
+      ) : (
+        <header className="space-y-2">
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedTopic(null);
+              setVocabSearch("");
+            }}
+            className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
+          >
+            <ChevronLeft className="w-4 h-4" /> Back to topics
+          </button>
+          <h2 className="text-2xl sm:text-3xl font-headline font-extrabold text-on-background tracking-tight">
+            {selectedTopicInfo?.topic.name || "Topic"}
+          </h2>
+          <p className="text-on-surface-variant text-sm sm:text-base">
+            {selectedTopicInfo ? `${selectedTopicInfo.totalWords} words • ${selectedTopicInfo.masteredCount} mastered` : "Focused vocabulary view"}
+          </p>
+        </header>
+      )}
+
+      {!selectedTopic && (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {topicCards.slice(0, visibleTopicCount).map(({ topic, totalWords, masteredCount }) => (
+              <div
+                key={topic.id}
+                onClick={() => setSelectedTopic(topic.id!)}
+                className="group relative bg-surface-container-lowest rounded-xl p-5 sm:p-8 transition-all duration-300 cursor-pointer flex flex-col justify-between min-h-48 sm:h-64 shadow-sm border-2 border-transparent hover:border-primary/10"
+              >
+                <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingTopic(topic);
+                      setEditTopicName(topic.name);
+                    }}
+                    className="p-2 bg-surface-container-high rounded-full text-on-surface-variant hover:text-primary transition-colors"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteTopicId(topic.id!);
+                    }}
+                    className="p-2 bg-surface-container-high rounded-full text-on-surface-variant hover:text-error transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+                <div>
+                  <h3 className="text-xl sm:text-2xl font-headline font-bold mb-2">{topic.name}</h3>
+                  <p className="text-on-surface-variant text-sm">{totalWords} Words • {masteredCount} Mastered</p>
+                </div>
+                <div className="flex gap-4 mt-4 sm:mt-6">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-on-surface-variant uppercase tracking-tighter">Total</span>
+                    <span className="text-xl font-headline font-bold">{totalWords}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-on-surface-variant uppercase tracking-tighter">Mastered</span>
+                    <span className="text-xl font-headline font-bold text-primary">{masteredCount}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {topicCards.length === 0 && (
+            <div className="text-center py-10 text-on-surface-variant">No topics matched your search.</div>
+          )}
+
+          {visibleTopicCount < topicCards.length && (
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={() => setVisibleTopicCount(prev => prev + 9)}
+                className="px-6 py-2.5 rounded-xl bg-surface-container-low text-on-surface font-semibold hover:bg-surface-container-high transition-colors"
+              >
+                Load more topics
+              </button>
+            </div>
+          )}
+        </>
+      )}
 
       {/* Table Section */}
+      {selectedTopic && (
       <section className="bg-surface-container-low rounded-2xl sm:rounded-3xl overflow-hidden shadow-sm">
         <div className="p-4 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
           <div className="flex flex-col">
             <h4 className="text-lg sm:text-xl font-headline font-bold text-on-background">
-              {selectedTopic ? topics.find(t => t.id === selectedTopic)?.name : "All Vocabulary"}
+              {selectedTopic ? topics.find(t => t.id === selectedTopic)?.name : "Vocabulary"}
             </h4>
             <p className="text-sm text-on-surface-variant">Showing {filteredVocab.length} terms</p>
           </div>
@@ -216,8 +303,8 @@ export default function TopicList({ onEdit }: TopicListProps) {
               <input 
                 className="w-full pl-12 pr-4 py-3 bg-surface-container-lowest border-none rounded-xl focus:ring-2 focus:ring-primary/20"
                 placeholder="Filter terms..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
+                value={vocabSearch}
+                onChange={e => setVocabSearch(e.target.value)}
               />
             </div>
             <button className="p-3 bg-surface-container-highest rounded-xl text-on-surface-variant hover:text-primary transition-colors">
@@ -348,6 +435,7 @@ export default function TopicList({ onEdit }: TopicListProps) {
           </div>
         </div>
       </section>
+      )}
 
       {/* Delete Word Confirmation Modal */}
       {deleteId && (

@@ -67,8 +67,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     if (!user || !formData.word) return;
     setLoading(true);
 
@@ -143,7 +142,15 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
         <div className="lg:col-span-8 bg-surface-container-lowest rounded-xl p-4 sm:p-8 shadow-sm border border-outline-variant/10">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form
+            onSubmit={e => {
+              e.preventDefault();
+              if (!aiLoading && !loading) {
+                void handleAiValidate();
+              }
+            }}
+            className="space-y-6"
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-on-surface-variant ml-1">Word or Phrase</label>
@@ -236,9 +243,8 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
 
             <div className="pt-2 sm:pt-4 flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
               <button 
-                type="button"
-                onClick={handleAiValidate}
-                disabled={aiLoading || !formData.word}
+                type="submit"
+                  disabled={aiLoading || loading || !formData.word}
                 className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg font-bold text-primary hover:bg-primary-container transition-all disabled:opacity-50"
               >
                 {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
@@ -260,8 +266,9 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                   {editingWord ? "Cancel" : "Discard"}
                 </button>
                 <button 
-                  type="submit"
-                  disabled={loading || !formData.word}
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={loading || aiLoading || !formData.word}
                   className="w-full sm:w-auto bg-primary text-on-primary px-8 py-2.5 rounded-lg font-bold shadow-md hover:shadow-lg active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}

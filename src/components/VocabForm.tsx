@@ -14,7 +14,7 @@ interface VocabFormProps {
 }
 
 export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFormProps) {
-  const { user, topics } = useFirebase();
+  const { user, topics, vocabulary } = useFirebase();
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [selectedTopicId, setSelectedTopicId] = useState(editingWord?.topicId || AI_DECIDE_TOPIC);
@@ -27,6 +27,11 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
     example: editingWord?.example || "",
   });
   const [aiFeedback, setAiFeedback] = useState<any>(null);
+
+  const capitalizeFirstLetter = (value: string) => {
+    if (!value) return value;
+    return value.charAt(0).toUpperCase() + value.slice(1);
+  };
 
   // Update form data when editingWord changes
   React.useEffect(() => {
@@ -69,6 +74,14 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
 
   const handleSubmit = async () => {
     if (!user || !formData.word) return;
+
+    const normalizedNewWord = formData.word.trim().toLowerCase();
+    const duplicateWord = vocabulary.find((entry) => entry.word.trim().toLowerCase() === normalizedNewWord);
+    if (!editingWord && duplicateWord) {
+      alert(`"${formData.word.trim()}" already exists in your sanctuary.`);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -158,7 +171,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                   className="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20"
                   placeholder="e.g., Luminous"
                   value={formData.word}
-                  onChange={e => setFormData({ ...formData, word: e.target.value })}
+                  onChange={e => setFormData({ ...formData, word: capitalizeFirstLetter(e.target.value) })}
                   required
                 />
               </div>
@@ -204,7 +217,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                 className="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20"
                 placeholder="/ɪˈfɛmərəl/"
                 value={formData.ipa}
-                onChange={e => setFormData({ ...formData, ipa: e.target.value })}
+                onChange={e => setFormData({ ...formData, ipa: capitalizeFirstLetter(e.target.value) })}
               />
             </div>
 
@@ -215,7 +228,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                 placeholder="Describe the essence of the word..."
                 rows={2}
                 value={formData.meaning}
-                onChange={e => setFormData({ ...formData, meaning: e.target.value })}
+                onChange={e => setFormData({ ...formData, meaning: capitalizeFirstLetter(e.target.value) })}
               />
             </div>
 
@@ -226,7 +239,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                   className="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20"
                   placeholder="Academic, formal, poetic..."
                   value={formData.context}
-                  onChange={e => setFormData({ ...formData, context: e.target.value })}
+                  onChange={e => setFormData({ ...formData, context: capitalizeFirstLetter(e.target.value) })}
                 />
               </div>
               <div className="space-y-1.5">
@@ -236,7 +249,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                   placeholder="Use it in a natural sentence..."
                   rows={3}
                   value={formData.example}
-                  onChange={e => setFormData({ ...formData, example: e.target.value })}
+                  onChange={e => setFormData({ ...formData, example: capitalizeFirstLetter(e.target.value) })}
                 />
               </div>
             </div>

@@ -58,12 +58,12 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
       setAiFeedback(result);
       setFormData({
         ...formData,
-        word: result.word || "",
+        word: capitalizeFirstLetter(result.word || ""),
         type: result.type || "noun",
-        ipa: result.ipa || "",
-        meaning: result.meaning || "",
-        context: result.context || "",
-        example: result.example || "",
+        ipa: capitalizeFirstLetter(result.ipa || ""),
+        meaning: capitalizeFirstLetter(result.meaning || ""),
+        context: capitalizeFirstLetter(result.context || ""),
+        example: capitalizeFirstLetter(result.example || ""),
       });
     } catch (error) {
       console.error("AI Error:", error);
@@ -78,7 +78,8 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
     const normalizedNewWord = formData.word.trim().toLowerCase();
     const duplicateWord = vocabulary.find((entry) => entry.word.trim().toLowerCase() === normalizedNewWord);
     if (!editingWord && duplicateWord) {
-      alert(`"${formData.word.trim()}" already exists in your sanctuary.`);
+      const existingTopicName = topics.find((topic) => topic.id === duplicateWord.topicId)?.name || "Unknown topic";
+      alert(`"${formData.word.trim()}" already exists in your sanctuary (Topic: ${existingTopicName}).`);
       return;
     }
 

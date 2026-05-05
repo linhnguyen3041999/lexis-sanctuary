@@ -2,6 +2,7 @@ export interface Vocabulary {
   id?: string;
   word: string;
   type: string;
+  level?: string;
   ipa: string;
   meaning: string;
   context: string;

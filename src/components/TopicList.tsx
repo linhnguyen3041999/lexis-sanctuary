@@ -395,6 +395,7 @@ export default function TopicList({
                 <tr className="text-on-surface-variant text-xs font-bold uppercase tracking-widest">
                   <th className="px-6 py-4">Word</th>
                   <th className="px-6 py-4">Type</th>
+                  <th className="px-6 py-4">Level</th>
                   <th className="px-6 py-4">IPA</th>
                   <th className="px-6 py-4">Status</th>
                   <th className="px-6 py-4 text-right">Action</th>
@@ -413,6 +414,9 @@ export default function TopicList({
                         <span className="font-headline font-bold text-lg text-on-background">{v.word}</span>
                       </td>
                       <td className="px-6 py-5 text-on-surface-variant font-medium capitalize">{v.type}</td>
+                      <td className="px-6 py-5 text-on-surface-variant font-medium">
+                        {v.level ? v.level.toUpperCase() : "-"}
+                      </td>
                       <td className="px-6 py-5 font-mono text-primary text-sm">{v.ipa}</td>
                       <td className="px-6 py-5">
                         <span className={`px-3 py-1 text-[10px] font-bold rounded-full uppercase ${
@@ -476,7 +480,11 @@ export default function TopicList({
                   </div>
                   <p className="text-sm text-on-surface-variant mt-2 line-clamp-2">{v.meaning}</p>
                   <div className="mt-3 flex items-center justify-between">
-                    <span className="text-xs text-on-surface-variant capitalize">{v.type}</span>
+                    <div className="flex items-center gap-2 text-xs text-on-surface-variant">
+                      <span className="capitalize">{v.type}</span>
+                      <span>•</span>
+                      <span>{v.level ? v.level.toUpperCase() : "-"}</span>
+                    </div>
                     <div className="flex gap-1">
                       <button
                         onClick={(e) => {
@@ -709,6 +717,12 @@ export default function TopicList({
                   <h5 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Type</h5>
                   <span className="px-3 py-1 bg-surface-container-highest text-on-surface-variant rounded-full text-sm font-medium capitalize">
                     {viewingWord.type}
+                  </span>
+                </section>
+                <section>
+                  <h5 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Level</h5>
+                  <span className="px-3 py-1 bg-surface-container-highest text-on-surface-variant rounded-full text-sm font-medium">
+                    {viewingWord.level ? viewingWord.level.toUpperCase() : "Unspecified"}
                   </span>
                 </section>
                 <section>

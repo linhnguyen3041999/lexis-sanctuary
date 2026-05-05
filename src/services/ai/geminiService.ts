@@ -16,6 +16,7 @@ export async function validateWithGemini(formData: VocabInput): Promise<VocabVal
         properties: {
           word: { type: Type.STRING },
           type: { type: Type.STRING },
+          level: { type: Type.STRING },
           ipa: { type: Type.STRING },
           meaning: { type: Type.STRING, description: "A concise definition of the word in Vietnamese" },
           context: { type: Type.STRING, description: "A brief description of the typical usage context for the word in English" },
@@ -24,7 +25,7 @@ export async function validateWithGemini(formData: VocabInput): Promise<VocabVal
           isCorrect: { type: Type.BOOLEAN, description: "Whether the original input was mostly correct" },
           suggestions: { type: Type.STRING, description: "Brief explanation of changes made" }
         },
-        required: ["word", "type", "ipa", "meaning", "context", "example", "topic", "isCorrect", "suggestions"]
+        required: ["word", "type", "level", "ipa", "meaning", "context", "example", "topic", "isCorrect", "suggestions"]
       }
     },
   });

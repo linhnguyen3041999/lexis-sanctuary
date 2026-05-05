@@ -1,6 +1,7 @@
 export interface VocabInput {
   word: string;
   type?: string;
+  level?: string;
   ipa?: string;
   meaning?: string;
   context?: string;
@@ -10,6 +11,7 @@ export interface VocabInput {
 export interface VocabValidationResult {
   word: string;
   type: string;
+  level: string;
   ipa: string;
   meaning: string;
   context: string;

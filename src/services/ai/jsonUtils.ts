@@ -11,6 +11,7 @@ export function parseValidationResult(rawText: string): VocabValidationResult {
   return {
     word: parsed.word || "",
     type: parsed.type || "noun",
+    level: parsed.level || "",
     ipa: parsed.ipa || "",
     meaning: parsed.meaning || "",
     context: parsed.context || "",

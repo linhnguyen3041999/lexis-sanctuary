@@ -21,6 +21,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
   const [formData, setFormData] = useState({
     word: editingWord?.word || "",
     type: editingWord?.type || "noun",
+    level: editingWord?.level || "",
     ipa: editingWord?.ipa || "",
     meaning: editingWord?.meaning || "",
     context: editingWord?.context || "",
@@ -33,12 +34,19 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
     return value.charAt(0).toUpperCase() + value.slice(1);
   };
 
+  const normalizeLevel = (value: string) => {
+    const normalized = value.trim().toUpperCase();
+    if (!normalized || normalized === "UNKNOWN") return "";
+    return normalized;
+  };
+
   // Update form data when editingWord changes
   React.useEffect(() => {
     if (editingWord) {
       setFormData({
         word: editingWord.word,
         type: editingWord.type,
+        level: normalizeLevel(editingWord.level || ""),
         ipa: editingWord.ipa,
         meaning: editingWord.meaning,
         context: editingWord.context,
@@ -60,6 +68,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
         ...formData,
         word: capitalizeFirstLetter(result.word || ""),
         type: result.type || "noun",
+        level: normalizeLevel(result.level || ""),
         ipa: capitalizeFirstLetter(result.ipa || ""),
         meaning: capitalizeFirstLetter(result.meaning || ""),
         context: capitalizeFirstLetter(result.context || ""),
@@ -132,7 +141,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
       }
 
       // Reset
-      setFormData({ word: "", type: "noun", ipa: "", meaning: "", context: "", example: "" });
+      setFormData({ word: "", type: "noun", level: "", ipa: "", meaning: "", context: "", example: "" });
       setAiFeedback(null);
       setSelectedTopicId(AI_DECIDE_TOPIC);
       if (onSuccess) onSuccess();
@@ -165,7 +174,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
             }}
             className="space-y-6"
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-on-surface-variant ml-1">Word or Phrase</label>
                 <input 
@@ -189,6 +198,22 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                   <option value="adverb">Adverb</option>
                   <option value="idiom">Idiom</option>
                   <option value="collocation">Collocations</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-on-surface-variant ml-1">Level (CEFR)</label>
+                <select
+                  className="w-full bg-surface-container-low border border-outline-variant/40 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20"
+                  value={formData.level}
+                  onChange={e => setFormData({ ...formData, level: e.target.value })}
+                >
+                  <option value="">Select level</option>
+                  <option value="A1">A1</option>
+                  <option value="A2">A2</option>
+                  <option value="B1">B1</option>
+                  <option value="B2">B2</option>
+                  <option value="C1">C1</option>
+                  <option value="C2">C2</option>
                 </select>
               </div>
               <div className="space-y-1.5 md:col-span-2">
@@ -273,7 +298,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                       onCancel();
                       return;
                     }
-                    setFormData({ word: "", type: "noun", ipa: "", meaning: "", context: "", example: "" });
+                    setFormData({ word: "", type: "noun", level: "", ipa: "", meaning: "", context: "", example: "" });
                     setSelectedTopicId(AI_DECIDE_TOPIC);
                   }}
                   className="w-full sm:w-auto px-6 py-2.5 rounded-lg font-bold text-on-surface-variant hover:bg-surface-container-high"

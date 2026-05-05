@@ -40,6 +40,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
     return normalized;
   };
 
+
   // Update form data when editingWord changes
   React.useEffect(() => {
     if (editingWord) {

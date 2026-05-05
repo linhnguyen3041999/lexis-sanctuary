@@ -68,7 +68,7 @@ export default function Layout({ children, activeTab, setActiveTab }: LayoutProp
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "vocabulary", label: "Vocabulary", icon: BookOpen },
-    { id: "topics", label: "Topics", icon: Layers },
+    { id: "topics", label: "Word List", icon: Layers },
     { id: "flashcards", label: "Flashcards", icon: GraduationCap },
   ];
 

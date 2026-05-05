@@ -36,6 +36,6 @@ export {
   updateDoc, 
   deleteDoc, 
   serverTimestamp, 
-  orderBy 
+  orderBy
 };
 export type { User };

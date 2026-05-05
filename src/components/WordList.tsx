@@ -14,6 +14,7 @@ type WordListFilters = {
   filterLevel?: string;
   filterTopicId?: string;
   filterStatus?: string;
+  currentPage?: number;
 };
 
 interface WordListProps {
@@ -170,7 +171,11 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
       setFilterLevel(parsedFilters?.filterLevel || "");
       setFilterTopicId(parsedFilters?.filterTopicId || "");
       setFilterStatus(parsedFilters?.filterStatus || "");
-      setCurrentPage(1);
+      setCurrentPage(
+        parsedFilters?.currentPage && parsedFilters.currentPage > 0
+          ? parsedFilters.currentPage
+          : 1,
+      );
     } catch (error) {
       console.error("Word list filters restore error:", error);
       sessionStorage.removeItem(filterStorageKey);
@@ -192,6 +197,7 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
       filterLevel,
       filterTopicId,
       filterStatus,
+      currentPage,
     };
 
     try {
@@ -199,7 +205,7 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
     } catch (error) {
       console.error("Word list filters persist error:", error);
     }
-  }, [filterStorageKey, search, filterType, filterLevel, filterTopicId, filterStatus]);
+  }, [filterStorageKey, search, filterType, filterLevel, filterTopicId, filterStatus, currentPage]);
 
   useEffect(() => {
     if (!user) return;
@@ -217,11 +223,6 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
 
     void runMigration();
   }, [user]);
-
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, filterType, filterLevel, filterTopicId, filterStatus]);
 
   const topicNameById = useMemo(() => {
     return new Map(topics.map(topic => [topic.id, topic.name]));
@@ -293,13 +294,19 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
               className="w-full pl-12 pr-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/20"
               placeholder="Search vocabulary..."
               value={search}
-              onChange={e => setSearch(capitalizeFirstLetter(e.target.value))}
+              onChange={e => {
+                setSearch(capitalizeFirstLetter(e.target.value));
+                setCurrentPage(1);
+              }}
             />
           </div>
           <select
             className="bg-surface-container-low border-none rounded-xl px-4 py-3 text-sm font-medium text-on-surface focus:ring-2 focus:ring-primary/20"
             value={filterType}
-            onChange={e => setFilterType(e.target.value)}
+            onChange={e => {
+              setFilterType(e.target.value);
+              setCurrentPage(1);
+            }}
           >
             <option value="">All types</option>
             {typeOptions.map(option => (
@@ -309,7 +316,10 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
           <select
             className="bg-surface-container-low border-none rounded-xl px-4 py-3 text-sm font-medium text-on-surface focus:ring-2 focus:ring-primary/20"
             value={filterLevel}
-            onChange={e => setFilterLevel(e.target.value)}
+            onChange={e => {
+              setFilterLevel(e.target.value);
+              setCurrentPage(1);
+            }}
           >
             <option value="">All levels</option>
             {levelOptions.map(option => (
@@ -319,7 +329,10 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
           <select
             className="bg-surface-container-low border-none rounded-xl px-4 py-3 text-sm font-medium text-on-surface focus:ring-2 focus:ring-primary/20"
             value={filterTopicId}
-            onChange={e => setFilterTopicId(e.target.value)}
+            onChange={e => {
+              setFilterTopicId(e.target.value);
+              setCurrentPage(1);
+            }}
           >
             <option value="">All topics</option>
             {topics.map(topic => (
@@ -329,7 +342,10 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
           <select
             className="bg-surface-container-low border-none rounded-xl px-4 py-3 text-sm font-medium text-on-surface focus:ring-2 focus:ring-primary/20"
             value={filterStatus}
-            onChange={e => setFilterStatus(e.target.value)}
+            onChange={e => {
+              setFilterStatus(e.target.value);
+              setCurrentPage(1);
+            }}
           >
             <option value="">All status</option>
             {statusOptions.map(option => (

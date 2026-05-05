@@ -15,6 +15,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [topicEditingWord, setTopicEditingWord] = useState<Vocabulary | null>(null);
   const [topicResetSignal, setTopicResetSignal] = useState(0);
+  const [lastTopicId, setLastTopicId] = useState<string | null>(null);
+  const [topicReturnSignal, setTopicReturnSignal] = useState(0);
 
   const handleSidebarTabChange = (tab: string) => {
     if (tab === "topics") {
@@ -26,6 +28,7 @@ export default function App() {
 
   const handleEditWord = (word: Vocabulary) => {
     setTopicEditingWord(word);
+    setLastTopicId(word.topicId || null);
     setActiveTab("topics");
   };
 
@@ -44,11 +47,22 @@ export default function App() {
         topicEditingWord ? (
           <VocabForm
             editingWord={topicEditingWord}
-            onCancel={() => setTopicEditingWord(null)}
-            onSuccess={() => setTopicEditingWord(null)}
+            onCancel={() => {
+              setTopicEditingWord(null);
+              setTopicReturnSignal(prev => prev + 1);
+            }}
+            onSuccess={() => {
+              setTopicEditingWord(null);
+              setTopicReturnSignal(prev => prev + 1);
+            }}
           />
         ) : (
-          <TopicList onEdit={handleEditWord} resetToRootSignal={topicResetSignal} />
+          <TopicList
+            onEdit={handleEditWord}
+            resetToRootSignal={topicResetSignal}
+            restoreSelectedTopicId={lastTopicId}
+            restoreSelectedTopicSignal={topicReturnSignal}
+          />
         )
       )}
     </Layout>

@@ -8,9 +8,16 @@ import { GoogleGenAI, Modality } from "@google/genai";
 interface TopicListProps {
   onEdit?: (word: Vocabulary) => void;
   resetToRootSignal?: number;
+  restoreSelectedTopicId?: string | null;
+  restoreSelectedTopicSignal?: number;
 }
 
-export default function TopicList({ onEdit, resetToRootSignal }: TopicListProps) {
+export default function TopicList({
+  onEdit,
+  resetToRootSignal,
+  restoreSelectedTopicId,
+  restoreSelectedTopicSignal,
+}: TopicListProps) {
   const { user, vocabulary, topics, progress } = useFirebase();
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [vocabSearch, setVocabSearch] = useState("");
@@ -182,6 +189,11 @@ export default function TopicList({ onEdit, resetToRootSignal }: TopicListProps)
     setCreateTopicError("");
     setViewingWord(null);
   }, [resetToRootSignal]);
+
+  useEffect(() => {
+    if (!restoreSelectedTopicId) return;
+    setSelectedTopic(restoreSelectedTopicId);
+  }, [restoreSelectedTopicId, restoreSelectedTopicSignal]);
 
   const topicCards = useMemo(() => {
     const enriched = topics.map(topic => {

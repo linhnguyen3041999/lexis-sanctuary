@@ -169,7 +169,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-on-surface-variant ml-1">Word or Phrase</label>
                 <input 
-                  className="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20"
+                  className="w-full bg-surface-container-low border border-outline-variant/40 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20"
                   placeholder="e.g., Luminous"
                   value={formData.word}
                   onChange={e => setFormData({ ...formData, word: capitalizeFirstLetter(e.target.value) })}
@@ -179,7 +179,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-on-surface-variant ml-1">Word Type</label>
                 <select 
-                  className="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20"
+                  className="w-full bg-surface-container-low border border-outline-variant/40 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20"
                   value={formData.type}
                   onChange={e => setFormData({ ...formData, type: e.target.value })}
                 >
@@ -188,12 +188,13 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                   <option value="adjective">Adjective</option>
                   <option value="adverb">Adverb</option>
                   <option value="idiom">Idiom</option>
+                  <option value="collocation">Collocations</option>
                 </select>
               </div>
               <div className="space-y-1.5 md:col-span-2">
                 <label className="text-sm font-medium text-on-surface-variant ml-1">Topic</label>
                 <select
-                  className="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20"
+                  className="w-full bg-surface-container-low border border-outline-variant/40 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20"
                   value={selectedTopicId}
                   onChange={e => setSelectedTopicId(e.target.value)}
                 >
@@ -215,7 +216,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                 )}
               </label>
               <input 
-                className="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20"
+                className="w-full bg-surface-container-low border border-outline-variant/40 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20"
                 placeholder="/ɪˈfɛmərəl/"
                 value={formData.ipa}
                 onChange={e => setFormData({ ...formData, ipa: capitalizeFirstLetter(e.target.value) })}
@@ -225,7 +226,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-on-surface-variant ml-1">Core Meaning</label>
               <textarea 
-                className="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20 resize-none"
+                className="w-full bg-surface-container-low border border-outline-variant/40 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20 resize-none"
                 placeholder="Describe the essence of the word..."
                 rows={2}
                 value={formData.meaning}
@@ -237,7 +238,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-on-surface-variant ml-1">Context / Usage Notes</label>
                 <input 
-                  className="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20"
+                  className="w-full bg-surface-container-low border border-outline-variant/40 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20"
                   placeholder="Academic, formal, poetic..."
                   value={formData.context}
                   onChange={e => setFormData({ ...formData, context: capitalizeFirstLetter(e.target.value) })}
@@ -246,7 +247,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-on-surface-variant ml-1">Example Sentence</label>
                 <textarea 
-                  className="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20 resize-none"
+                  className="w-full bg-surface-container-low border border-outline-variant/40 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20 resize-none"
                   placeholder="Use it in a natural sentence..."
                   rows={3}
                   value={formData.example}

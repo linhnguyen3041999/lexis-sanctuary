@@ -7,12 +7,12 @@ import { GoogleGenAI, Modality } from "@google/genai";
 
 const PAGE_SIZE = 10;
 
-interface TopicListProps {
+interface WordListProps {
   onEdit?: (word: Vocabulary) => void;
   resetToRootSignal?: number;
 }
 
-export default function TopicList({ onEdit, resetToRootSignal }: TopicListProps) {
+export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
   const { user, topics, progress, vocabulary } = useFirebase();
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("");

@@ -8,7 +8,7 @@ import Layout from "./components/Layout";
 import Dashboard from "./components/Dashboard";
 import VocabForm from "./components/VocabForm";
 import Flashcard from "./components/Flashcard";
-import TopicList from "./components/TopicList";
+import WordList from "./components/WordList";
 import { Vocabulary } from "./types";
 
 export default function App() {
@@ -48,7 +48,7 @@ export default function App() {
             onSuccess={() => setTopicEditingWord(null)}
           />
         ) : (
-          <TopicList onEdit={handleEditWord} resetToRootSignal={topicResetSignal} />
+          <WordList onEdit={handleEditWord} resetToRootSignal={topicResetSignal} />
         )
       )}
     </Layout>

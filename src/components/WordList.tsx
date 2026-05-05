@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Search, Edit, Trash2, X, Volume2, Loader2 } from "lucide-react";
 import { useFirebase } from "../hooks/useFirebase";
 import { db, deleteDoc, doc, collection, query, where, getDocs, updateDoc } from "../firebase";
@@ -6,6 +6,15 @@ import { Vocabulary } from "../types";
 import { GoogleGenAI, Modality } from "@google/genai";
 
 const PAGE_SIZE = 10;
+const WORD_LIST_FILTERS_STORAGE_KEY_PREFIX = "lexis:word-list-filters";
+
+type WordListFilters = {
+  search?: string;
+  filterType?: string;
+  filterLevel?: string;
+  filterTopicId?: string;
+  filterStatus?: string;
+};
 
 interface WordListProps {
   onEdit?: (word: Vocabulary) => void;
@@ -23,6 +32,13 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [viewingWord, setViewingWord] = useState<Vocabulary | null>(null);
   const [isListening, setIsListening] = useState(false);
+  const hasLoadedStoredFiltersRef = useRef(false);
+  const skipNextFiltersPersistRef = useRef(false);
+
+  const filterStorageKey = useMemo(() => {
+    if (!user?.uid) return "";
+    return `${WORD_LIST_FILTERS_STORAGE_KEY_PREFIX}:${user.uid}`;
+  }, [user?.uid]);
 
   const capitalizeFirstLetter = (value: string) => {
     const trimmed = value.trim();
@@ -128,6 +144,62 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
     setDeleteId(null);
     setViewingWord(null);
   }, [resetToRootSignal]);
+
+  useEffect(() => {
+    if (!filterStorageKey) return;
+
+    hasLoadedStoredFiltersRef.current = false;
+    skipNextFiltersPersistRef.current = true;
+
+    try {
+      const storedFilters = sessionStorage.getItem(filterStorageKey);
+      if (!storedFilters) {
+        setSearch("");
+        setFilterType("");
+        setFilterLevel("");
+        setFilterTopicId("");
+        setFilterStatus("");
+        setCurrentPage(1);
+        hasLoadedStoredFiltersRef.current = true;
+        return;
+      }
+
+      const parsedFilters = JSON.parse(storedFilters) as WordListFilters | null;
+      setSearch(parsedFilters?.search || "");
+      setFilterType(parsedFilters?.filterType || "");
+      setFilterLevel(parsedFilters?.filterLevel || "");
+      setFilterTopicId(parsedFilters?.filterTopicId || "");
+      setFilterStatus(parsedFilters?.filterStatus || "");
+      setCurrentPage(1);
+    } catch (error) {
+      console.error("Word list filters restore error:", error);
+      sessionStorage.removeItem(filterStorageKey);
+    } finally {
+      hasLoadedStoredFiltersRef.current = true;
+    }
+  }, [filterStorageKey]);
+
+  useEffect(() => {
+    if (!filterStorageKey || !hasLoadedStoredFiltersRef.current) return;
+    if (skipNextFiltersPersistRef.current) {
+      skipNextFiltersPersistRef.current = false;
+      return;
+    }
+
+    const nextFilters: WordListFilters = {
+      search,
+      filterType,
+      filterLevel,
+      filterTopicId,
+      filterStatus,
+    };
+
+    try {
+      sessionStorage.setItem(filterStorageKey, JSON.stringify(nextFilters));
+    } catch (error) {
+      console.error("Word list filters persist error:", error);
+    }
+  }, [filterStorageKey, search, filterType, filterLevel, filterTopicId, filterStatus]);
 
   useEffect(() => {
     if (!user) return;

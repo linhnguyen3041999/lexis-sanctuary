@@ -199,6 +199,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                   <option value="adverb">Adverb</option>
                   <option value="idiom">Idiom</option>
                   <option value="collocation">Collocations</option>
+                  <option value="expression">Expression</option>
                 </select>
               </div>
               <div className="space-y-1.5">

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { LayoutDashboard, BookOpen, Layers, GraduationCap, LogOut, HelpCircle, Search, Bell, Settings, Menu, X } from "lucide-react";
+import { LayoutDashboard, BookOpen, Layers, GraduationCap, LogOut, HelpCircle, Search, Bell, Settings, Menu, X, FolderTree } from "lucide-react";
 import { auth, googleProvider, signInWithPopup } from "../firebase";
 import { useFirebase } from "../hooks/useFirebase";
 
@@ -68,7 +68,8 @@ export default function Layout({ children, activeTab, setActiveTab }: LayoutProp
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "vocabulary", label: "Vocabulary", icon: BookOpen },
-    { id: "topics", label: "Word List", icon: Layers },
+    { id: "wordList", label: "Word List", icon: Layers },
+    { id: "topicManager", label: "Topics", icon: FolderTree },
     { id: "flashcards", label: "Flashcards", icon: GraduationCap },
   ];
 

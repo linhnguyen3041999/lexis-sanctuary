@@ -31,6 +31,8 @@
   --color-outline-variant: #a9b4b9;
   
   --color-error: #9f403d;
+  --color-error-container: #ffdad6;
+  --color-on-error: #ffffff;
 }
 
 @layer base {

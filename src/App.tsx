@@ -9,6 +9,7 @@ import Dashboard from "./components/Dashboard";
 import VocabForm from "./components/VocabForm";
 import Flashcard from "./components/Flashcard";
 import WordList from "./components/WordList";
+import TopicManager from "./components/TopicManager";
 import { Vocabulary } from "./types";
 
 export default function App() {
@@ -17,7 +18,7 @@ export default function App() {
   const [topicResetSignal, setTopicResetSignal] = useState(0);
 
   const handleSidebarTabChange = (tab: string) => {
-    if (tab === "topics") {
+    if (tab === "wordList") {
       setTopicEditingWord(null);
       setTopicResetSignal(prev => prev + 1);
     }
@@ -26,11 +27,11 @@ export default function App() {
 
   const handleEditWord = (word: Vocabulary) => {
     setTopicEditingWord(word);
-    setActiveTab("topics");
+    setActiveTab("wordList");
   };
 
   useEffect(() => {
-    if (activeTab !== "topics") {
+    if (activeTab !== "wordList") {
       setTopicEditingWord(null);
     }
   }, [activeTab]);
@@ -40,7 +41,7 @@ export default function App() {
       {activeTab === "dashboard" && <Dashboard setActiveTab={setActiveTab} />}
       {activeTab === "vocabulary" && <VocabForm />}
       {activeTab === "flashcards" && <Flashcard />}
-      {activeTab === "topics" && (
+      {activeTab === "wordList" && (
         topicEditingWord ? (
           <VocabForm
             editingWord={topicEditingWord}
@@ -51,6 +52,7 @@ export default function App() {
           <WordList onEdit={handleEditWord} resetToRootSignal={topicResetSignal} />
         )
       )}
+      {activeTab === "topicManager" && <TopicManager />}
     </Layout>
   );
 }

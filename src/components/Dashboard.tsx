@@ -99,7 +99,7 @@ export default function Dashboard({ setActiveTab }: { setActiveTab: (tab: string
         <section className="md:col-span-12 mt-4 sm:mt-8">
           <div className="flex items-center justify-between mb-4 sm:mb-6">
             <h2 className="text-xl sm:text-2xl font-headline font-bold text-on-background">Recent Topics</h2>
-            <button onClick={() => setActiveTab("topics")} className="text-primary font-bold text-sm hover:underline">View All</button>
+            <button onClick={() => setActiveTab("topicManager")} className="text-primary font-bold text-sm hover:underline">Manage</button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
             {topics.slice(0, 3).map(topic => {
@@ -107,7 +107,7 @@ export default function Dashboard({ setActiveTab }: { setActiveTab: (tab: string
               return (
                 <div 
                   key={topic.id}
-                  onClick={() => setActiveTab("topics")}
+                  onClick={() => setActiveTab("wordList")}
                   className="flex items-center gap-3 sm:gap-4 bg-surface-container-low p-4 rounded-xl group hover:shadow-md transition-shadow cursor-pointer"
                 >
                   <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg bg-primary-container flex items-center justify-center text-primary flex-shrink-0">

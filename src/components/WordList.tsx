@@ -376,6 +376,7 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
                   <th className="px-6 py-4 text-center">Level</th>
                   <th className="px-6 py-4 text-left">Topic</th>
                   <th className="px-6 py-4 text-left">IPA</th>
+                  <th className="px-6 py-4 text-left">Synonyms</th>
                   <th className="px-6 py-4 text-center">Status</th>
                   <th className="px-6 py-4 text-right"><span className="sr-only">Action</span></th>
                 </tr>
@@ -400,6 +401,9 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
                         {topicNameById.get(v.topicId) || "Unclassified"}
                       </td>
                       <td className="px-6 py-5 font-mono text-primary text-sm">{v.ipa}</td>
+                      <td className="px-6 py-5 text-on-surface-variant text-sm max-w-[240px] truncate" title={v.synonyms || ""}>
+                        {v.synonyms || "-"}
+                      </td>
                       <td className="px-6 py-5 text-center">
                         <span className={`px-3 py-1 text-[10px] font-bold rounded-full uppercase ${
                           status === "mastered" ? "bg-secondary-container text-on-secondary-container" :
@@ -463,6 +467,9 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
                       {status}
                     </span>
                   </div>
+                  <p className="text-xs text-on-surface-variant mt-2">
+                    <span className="font-semibold text-on-background/80">Synonyms:</span> {v.synonyms || "-"}
+                  </p>
                   <p className="text-sm text-on-surface-variant mt-2 line-clamp-2">{v.meaning}</p>
                   <div className="mt-3 flex items-center justify-between">
                     <div className="flex items-center gap-2 text-xs text-on-surface-variant">
@@ -594,6 +601,10 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
                   <span className="px-3 py-1 bg-surface-container-highest text-on-surface-variant rounded-full text-sm font-medium capitalize">
                     {viewingWord.type}
                   </span>
+                </section>
+                <section>
+                  <h5 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Synonyms</h5>
+                  <p className="text-on-background leading-relaxed">{viewingWord.synonyms || "Unspecified"}</p>
                 </section>
                 <section>
                   <h5 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Level</h5>

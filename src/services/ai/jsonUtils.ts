@@ -13,6 +13,8 @@ export function parseValidationResult(rawText: string): VocabValidationResult {
     type: parsed.type || "noun",
     level: parsed.level || "",
     ipa: parsed.ipa || "",
+    synonyms: parsed.synonyms || "",
+    relatedForms: parsed.relatedForms || "",
     meaning: parsed.meaning || "",
     context: parsed.context || "",
     example: parsed.example || "",

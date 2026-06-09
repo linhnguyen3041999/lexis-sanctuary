@@ -3,6 +3,8 @@ export interface VocabInput {
   type?: string;
   level?: string;
   ipa?: string;
+  synonyms?: string;
+  relatedForms?: string;
   meaning?: string;
   context?: string;
   example?: string;
@@ -13,6 +15,8 @@ export interface VocabValidationResult {
   type: string;
   level: string;
   ipa: string;
+  synonyms: string;
+  relatedForms: string;
   meaning: string;
   context: string;
   example: string;

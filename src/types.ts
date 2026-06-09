@@ -4,6 +4,8 @@ export interface Vocabulary {
   type: string;
   level?: string;
   ipa: string;
+  synonyms?: string;
+  relatedForms?: string;
   meaning: string;
   context: string;
   example: string;

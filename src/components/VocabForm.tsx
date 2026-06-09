@@ -23,6 +23,8 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
     type: editingWord?.type || "noun",
     level: editingWord?.level || "",
     ipa: editingWord?.ipa || "",
+    synonyms: editingWord?.synonyms || "",
+    relatedForms: editingWord?.relatedForms || "",
     meaning: editingWord?.meaning || "",
     context: editingWord?.context || "",
     example: editingWord?.example || "",
@@ -49,6 +51,8 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
         type: editingWord.type,
         level: normalizeLevel(editingWord.level || ""),
         ipa: editingWord.ipa,
+        synonyms: editingWord.synonyms || "",
+        relatedForms: editingWord.relatedForms || "",
         meaning: editingWord.meaning,
         context: editingWord.context,
         example: editingWord.example,
@@ -71,6 +75,8 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
         type: result.type || "noun",
         level: normalizeLevel(result.level || ""),
         ipa: capitalizeFirstLetter(result.ipa || ""),
+        synonyms: capitalizeFirstLetter(result.synonyms || formData.synonyms),
+        relatedForms: result.relatedForms || formData.relatedForms,
         meaning: capitalizeFirstLetter(result.meaning || ""),
         context: capitalizeFirstLetter(result.context || ""),
         example: capitalizeFirstLetter(result.example || ""),
@@ -142,7 +148,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
       }
 
       // Reset
-      setFormData({ word: "", type: "noun", level: "", ipa: "", meaning: "", context: "", example: "" });
+      setFormData({ word: "", type: "noun", level: "", ipa: "", synonyms: "", relatedForms: "", meaning: "", context: "", example: "" });
       setAiFeedback(null);
       setSelectedTopicId(AI_DECIDE_TOPIC);
       if (onSuccess) onSuccess();
@@ -251,6 +257,23 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
             </div>
 
             <div className="space-y-1.5">
+              <label className="text-sm font-medium text-on-surface-variant ml-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
+                <span>Synonyms</span>
+                {aiFeedback?.synonyms && (
+                  <span className="text-xs text-primary font-medium flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" /> AI Suggestion: {aiFeedback.synonyms}
+                  </span>
+                )}
+              </label>
+              <input
+                className="w-full bg-surface-container-low border border-outline-variant/40 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20"
+                placeholder="radiant, bright, glowing"
+                value={formData.synonyms}
+                onChange={e => setFormData({ ...formData, synonyms: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-1.5">
               <label className="text-sm font-medium text-on-surface-variant ml-1">Core Meaning</label>
               <textarea 
                 className="w-full bg-surface-container-low border border-outline-variant/40 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20 resize-none"
@@ -281,6 +304,41 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                   onChange={e => setFormData({ ...formData, example: capitalizeFirstLetter(e.target.value) })}
                 />
               </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-on-surface-variant ml-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
+                  <span>Synonyms</span>
+                  {aiFeedback?.synonyms && (
+                    <span className="text-xs text-primary font-medium flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" /> AI Suggestion: {aiFeedback.synonyms}
+                    </span>
+                  )}
+                </label>
+                <input
+                  className="w-full bg-surface-container-low border border-outline-variant/40 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20"
+                  placeholder="radiant, bright, glowing"
+                  value={formData.synonyms}
+                  onChange={e => setFormData({ ...formData, synonyms: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-on-surface-variant ml-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
+                  <span>Related Word Forms</span>
+                  {aiFeedback?.relatedForms && (
+                    <span className="text-xs text-primary font-medium flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" /> AI Suggestion available
+                    </span>
+                  )}
+                </label>
+                <textarea
+                  className="w-full bg-surface-container-low border border-outline-variant/40 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20 resize-none min-h-[180px] font-mono text-sm leading-6"
+                  placeholder={`### Danh từ (noun)\n- **photograph** = bức ảnh (trang trọng hơn)\n\n### Động từ (verb)\n- **photograph** = chụp ảnh`}
+                  rows={8}
+                  value={formData.relatedForms}
+                  onChange={e => setFormData({ ...formData, relatedForms: e.target.value })}
+                />
+              </div>
             </div>
 
             <div className="pt-2 sm:pt-4 flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -300,7 +358,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                       onCancel();
                       return;
                     }
-                    setFormData({ word: "", type: "noun", level: "", ipa: "", meaning: "", context: "", example: "" });
+                    setFormData({ word: "", type: "noun", level: "", ipa: "", synonyms: "", relatedForms: "", meaning: "", context: "", example: "" });
                     setSelectedTopicId(AI_DECIDE_TOPIC);
                   }}
                   className="w-full sm:w-auto px-6 py-2.5 rounded-lg font-bold text-on-surface-variant hover:bg-surface-container-high"
@@ -341,6 +399,14 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                 <div className="bg-surface-container-lowest/50 rounded-lg p-4">
                   <p className="text-xs font-bold text-primary mb-1">TOPIC CLASSIFICATION</p>
                   <p className="text-sm font-medium">{aiFeedback.topic}</p>
+                </div>
+                <div className="bg-surface-container-lowest/50 rounded-lg p-4">
+                  <p className="text-xs font-bold text-primary mb-1">SYNONYMS</p>
+                  <p className="text-sm text-on-surface-variant leading-relaxed">{aiFeedback.synonyms || "No synonyms suggested."}</p>
+                </div>
+                <div className="bg-surface-container-lowest/50 rounded-lg p-4">
+                  <p className="text-xs font-bold text-primary mb-1">RELATED FORMS</p>
+                  <p className="text-sm text-on-surface-variant leading-relaxed whitespace-pre-wrap">{aiFeedback.relatedForms || "No related forms suggested."}</p>
                 </div>
                 <div className="bg-surface-container-lowest/50 rounded-lg p-4">
                   <p className="text-xs font-bold text-primary mb-1">SUGGESTIONS</p>

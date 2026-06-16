@@ -257,23 +257,6 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-on-surface-variant ml-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
-                <span>Synonyms</span>
-                {aiFeedback?.synonyms && (
-                  <span className="text-xs text-primary font-medium flex items-center gap-1">
-                    <Sparkles className="w-3 h-3" /> AI Suggestion: {aiFeedback.synonyms}
-                  </span>
-                )}
-              </label>
-              <input
-                className="w-full bg-surface-container-low border border-outline-variant/40 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20"
-                placeholder="radiant, bright, glowing"
-                value={formData.synonyms}
-                onChange={e => setFormData({ ...formData, synonyms: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-1.5">
               <label className="text-sm font-medium text-on-surface-variant ml-1">Core Meaning</label>
               <textarea 
                 className="w-full bg-surface-container-low border border-outline-variant/40 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20 resize-none"

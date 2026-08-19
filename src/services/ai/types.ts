@@ -4,6 +4,7 @@ export interface VocabInput {
   level?: string;
   ipa?: string;
   synonyms?: string;
+  verbPattern?: string;
   relatedForms?: string;
   meaning?: string;
   context?: string;
@@ -16,6 +17,7 @@ export interface VocabValidationResult {
   level: string;
   ipa: string;
   synonyms: string;
+  verbPattern: string;
   relatedForms: string;
   meaning: string;
   context: string;

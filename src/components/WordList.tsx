@@ -607,6 +607,10 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
                   <p className="text-on-background leading-relaxed">{viewingWord.synonyms || "Unspecified"}</p>
                 </section>
                 <section>
+                  <h5 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Verb Pattern / Usage Formula</h5>
+                  <p className="text-on-background leading-relaxed">{viewingWord.verbPattern || "Not applicable"}</p>
+                </section>
+                <section>
                   <h5 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Level</h5>
                   <span className="px-3 py-1 bg-surface-container-highest text-on-surface-variant rounded-full text-sm font-medium">
                     {viewingWord.level ? viewingWord.level.toUpperCase() : "Unspecified"}

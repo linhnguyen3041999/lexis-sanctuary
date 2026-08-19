@@ -24,6 +24,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
     level: editingWord?.level || "",
     ipa: editingWord?.ipa || "",
     synonyms: editingWord?.synonyms || "",
+    verbPattern: editingWord?.verbPattern || "",
     relatedForms: editingWord?.relatedForms || "",
     meaning: editingWord?.meaning || "",
     context: editingWord?.context || "",
@@ -52,6 +53,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
         level: normalizeLevel(editingWord.level || ""),
         ipa: editingWord.ipa,
         synonyms: editingWord.synonyms || "",
+        verbPattern: editingWord.verbPattern || "",
         relatedForms: editingWord.relatedForms || "",
         meaning: editingWord.meaning,
         context: editingWord.context,
@@ -76,6 +78,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
         level: normalizeLevel(result.level || ""),
         ipa: capitalizeFirstLetter(result.ipa || ""),
         synonyms: capitalizeFirstLetter(result.synonyms || formData.synonyms),
+        verbPattern: result.verbPattern || formData.verbPattern,
         relatedForms: result.relatedForms || formData.relatedForms,
         meaning: capitalizeFirstLetter(result.meaning || ""),
         context: capitalizeFirstLetter(result.context || ""),
@@ -148,7 +151,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
       }
 
       // Reset
-      setFormData({ word: "", type: "noun", level: "", ipa: "", synonyms: "", relatedForms: "", meaning: "", context: "", example: "" });
+      setFormData({ word: "", type: "noun", level: "", ipa: "", synonyms: "", verbPattern: "", relatedForms: "", meaning: "", context: "", example: "" });
       setAiFeedback(null);
       setSelectedTopicId(AI_DECIDE_TOPIC);
       if (onSuccess) onSuccess();
@@ -267,6 +270,16 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
               />
             </div>
 
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-on-surface-variant ml-1">Verb Pattern / Usage Formula</label>
+              <input
+                className="w-full bg-surface-container-low border border-outline-variant/40 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20"
+                placeholder="e.g., be worth + V-ing or be worth + noun"
+                value={formData.verbPattern}
+                onChange={e => setFormData({ ...formData, verbPattern: e.target.value })}
+              />
+            </div>
+
             <div className="grid grid-cols-1 gap-6">
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-on-surface-variant ml-1">Context / Usage Notes</label>
@@ -279,10 +292,10 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-on-surface-variant ml-1">Example Sentence</label>
-                <textarea 
+                  <input
+                  type="text"
                   className="w-full bg-surface-container-low border border-outline-variant/40 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20 resize-none"
                   placeholder="Use it in a natural sentence..."
-                  rows={3}
                   value={formData.example}
                   onChange={e => setFormData({ ...formData, example: capitalizeFirstLetter(e.target.value) })}
                 />
@@ -298,6 +311,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                   )}
                 </label>
                 <input
+                  type="text"
                   className="w-full bg-surface-container-low border border-outline-variant/40 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20"
                   placeholder="radiant, bright, glowing"
                   value={formData.synonyms}
@@ -341,7 +355,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                       onCancel();
                       return;
                     }
-                    setFormData({ word: "", type: "noun", level: "", ipa: "", synonyms: "", relatedForms: "", meaning: "", context: "", example: "" });
+                    setFormData({ word: "", type: "noun", level: "", ipa: "", synonyms: "", verbPattern: "", relatedForms: "", meaning: "", context: "", example: "" });
                     setSelectedTopicId(AI_DECIDE_TOPIC);
                   }}
                   className="w-full sm:w-auto px-6 py-2.5 rounded-lg font-bold text-on-surface-variant hover:bg-surface-container-high"
@@ -386,6 +400,10 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                 <div className="bg-surface-container-lowest/50 rounded-lg p-4">
                   <p className="text-xs font-bold text-primary mb-1">SYNONYMS</p>
                   <p className="text-sm text-on-surface-variant leading-relaxed">{aiFeedback.synonyms || "No synonyms suggested."}</p>
+                </div>
+                <div className="bg-surface-container-lowest/50 rounded-lg p-4">
+                  <p className="text-xs font-bold text-primary mb-1">VERB PATTERN</p>
+                  <p className="text-sm text-on-surface-variant leading-relaxed">{aiFeedback.verbPattern || "Not applicable."}</p>
                 </div>
                 <div className="bg-surface-container-lowest/50 rounded-lg p-4">
                   <p className="text-xs font-bold text-primary mb-1">RELATED FORMS</p>

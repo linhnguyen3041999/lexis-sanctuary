@@ -5,6 +5,7 @@ export interface Vocabulary {
   level?: string;
   ipa: string;
   synonyms?: string;
+  verbPattern?: string;
   relatedForms?: string;
   meaning: string;
   context: string;

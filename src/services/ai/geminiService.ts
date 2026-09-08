@@ -20,15 +20,15 @@ export async function validateWithGemini(formData: VocabInput): Promise<VocabVal
           ipa: { type: Type.STRING },
           synonyms: { type: Type.STRING, description: "A concise comma-separated list of related English words or phrases" },
           verbPattern: { type: Type.STRING, description: "A useful verb usage formula, or an empty string when not relevant" },
+          collocations: { type: Type.STRING, description: "A markdown-style text block with common word combinations" },
           relatedForms: { type: Type.STRING, description: "A markdown-style text block with related word forms grouped by part of speech" },
           meaning: { type: Type.STRING, description: "A concise definition of the word in Vietnamese" },
-          context: { type: Type.STRING, description: "A brief description of the typical usage context for the word in English" },
           example: { type: Type.STRING, description: "A sentence demonstrating the usage of the word" },
           topic: { type: Type.STRING, description: "A single high-level category name" },
           isCorrect: { type: Type.BOOLEAN, description: "Whether the original input was mostly correct" },
           suggestions: { type: Type.STRING, description: "Brief explanation of changes made" }
         },
-        required: ["word", "type", "level", "ipa", "synonyms", "verbPattern", "relatedForms", "meaning", "context", "example", "topic", "isCorrect", "suggestions"]
+        required: ["word", "type", "level", "ipa", "synonyms", "verbPattern", "collocations", "relatedForms", "meaning", "example", "topic", "isCorrect", "suggestions"]
       }
     },
   });

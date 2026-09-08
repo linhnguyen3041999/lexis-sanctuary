@@ -8,8 +8,9 @@ import { isBefore, format } from "date-fns";
 import { GoogleGenAI, Modality } from "@google/genai";
 
 export default function Flashcard() {
-  const { vocabulary, progress } = useFirebase();
+  const { vocabulary, progress, topics } = useFirebase();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedTopicId, setSelectedTopicId] = useState("");
   const [flipped, setFlipped] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -80,12 +81,13 @@ export default function Flashcard() {
   const dueWords = useMemo(() => {
     const now = new Date();
     return vocabulary.filter(v => {
+      if (selectedTopicId && v.topicId !== selectedTopicId) return false;
       const p = progress.find(pr => pr.wordId === v.id);
       if (!p) return false;
       const nextReviewDate = p.nextReview.toDate ? p.nextReview.toDate() : new Date(p.nextReview);
       return isBefore(nextReviewDate, now);
     });
-  }, [vocabulary, progress]);
+  }, [vocabulary, progress, selectedTopicId]);
 
   const currentWord = dueWords[currentIndex];
   const currentProgress = progress.find(p => p.wordId === currentWord?.id);
@@ -96,6 +98,11 @@ export default function Flashcard() {
       setCurrentIndex(0);
     }
   }, [dueWords.length, currentIndex]);
+
+  React.useEffect(() => {
+    setCurrentIndex(0);
+    setFlipped(false);
+  }, [selectedTopicId]);
 
   useEffect(() => {
     const updateCardHeight = () => {
@@ -151,6 +158,22 @@ export default function Flashcard() {
   return (
     <div className="max-w-2xl mx-auto flex flex-col items-center">
       <div className="w-full mb-6 sm:mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+          <label htmlFor="flashcard-topic" className="text-xs font-bold text-primary tracking-widest uppercase">
+            Study Topic
+          </label>
+          <select
+            id="flashcard-topic"
+            value={selectedTopicId}
+            onChange={e => setSelectedTopicId(e.target.value)}
+            className="w-full sm:w-auto min-w-56 bg-surface-container-low border border-outline-variant/30 rounded-lg px-4 py-2.5 text-sm font-medium text-on-surface focus:ring-2 focus:ring-primary/20"
+          >
+            <option value="">All topics</option>
+            {topics.map(topic => (
+              <option key={topic.id} value={topic.id}>{topic.name}</option>
+            ))}
+          </select>
+        </div>
         <div className="flex justify-between items-end mb-2">
           <span className="text-xs font-bold text-primary tracking-widest uppercase">Session Progress</span>
           <span className="text-xs text-on-surface-variant font-medium">{currentIndex + 1} / {dueWords.length}</span>

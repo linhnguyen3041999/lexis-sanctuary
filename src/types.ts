@@ -6,9 +6,9 @@ export interface Vocabulary {
   ipa: string;
   synonyms?: string;
   verbPattern?: string;
+  collocations?: string;
   relatedForms?: string;
   meaning: string;
-  context: string;
   example: string;
   topicId: string;
   userId: string;

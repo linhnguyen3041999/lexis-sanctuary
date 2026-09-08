@@ -25,9 +25,9 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
     ipa: editingWord?.ipa || "",
     synonyms: editingWord?.synonyms || "",
     verbPattern: editingWord?.verbPattern || "",
+    collocations: editingWord?.collocations || "",
     relatedForms: editingWord?.relatedForms || "",
     meaning: editingWord?.meaning || "",
-    context: editingWord?.context || "",
     example: editingWord?.example || "",
   });
   const [aiFeedback, setAiFeedback] = useState<any>(null);
@@ -54,9 +54,9 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
         ipa: editingWord.ipa,
         synonyms: editingWord.synonyms || "",
         verbPattern: editingWord.verbPattern || "",
+        collocations: editingWord.collocations || "",
         relatedForms: editingWord.relatedForms || "",
         meaning: editingWord.meaning,
-        context: editingWord.context,
         example: editingWord.example,
       });
       setSelectedTopicId(editingWord.topicId || AI_DECIDE_TOPIC);
@@ -79,9 +79,9 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
         ipa: capitalizeFirstLetter(result.ipa || ""),
         synonyms: capitalizeFirstLetter(result.synonyms || formData.synonyms),
         verbPattern: result.verbPattern || formData.verbPattern,
+        collocations: result.collocations || formData.collocations,
         relatedForms: result.relatedForms || formData.relatedForms,
         meaning: capitalizeFirstLetter(result.meaning || ""),
-        context: capitalizeFirstLetter(result.context || ""),
         example: capitalizeFirstLetter(result.example || ""),
       });
     } catch (error) {
@@ -151,7 +151,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
       }
 
       // Reset
-      setFormData({ word: "", type: "noun", level: "", ipa: "", synonyms: "", verbPattern: "", relatedForms: "", meaning: "", context: "", example: "" });
+      setFormData({ word: "", type: "noun", level: "", ipa: "", synonyms: "", verbPattern: "", collocations: "", relatedForms: "", meaning: "", example: "" });
       setAiFeedback(null);
       setSelectedTopicId(AI_DECIDE_TOPIC);
       if (onSuccess) onSuccess();
@@ -282,20 +282,11 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
 
             <div className="grid grid-cols-1 gap-6">
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-on-surface-variant ml-1">Context / Usage Notes</label>
-                <input 
-                  className="w-full bg-surface-container-low border border-outline-variant/40 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20"
-                  placeholder="Academic, formal, poetic..."
-                  value={formData.context}
-                  onChange={e => setFormData({ ...formData, context: capitalizeFirstLetter(e.target.value) })}
-                />
-              </div>
-              <div className="space-y-1.5">
                 <label className="text-sm font-medium text-on-surface-variant ml-1">Example Sentence</label>
-                  <input
-                  type="text"
-                  className="w-full bg-surface-container-low border border-outline-variant/40 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20 resize-none"
+                <textarea
+                  className="w-full bg-surface-container-low border border-outline-variant/40 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20 resize-none font-mono text-sm leading-6"
                   placeholder="Use it in a natural sentence..."
+                  rows={4}
                   value={formData.example}
                   onChange={e => setFormData({ ...formData, example: capitalizeFirstLetter(e.target.value) })}
                 />
@@ -316,6 +307,24 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                   placeholder="radiant, bright, glowing"
                   value={formData.synonyms}
                   onChange={e => setFormData({ ...formData, synonyms: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-on-surface-variant ml-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
+                  <span>Collocations</span>
+                  {aiFeedback?.collocations && (
+                    <span className="text-xs text-primary font-medium flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" /> AI Suggestion available
+                    </span>
+                  )}
+                </label>
+                <textarea
+                  className="w-full bg-surface-container-low border border-outline-variant/40 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20 resize-none min-h-[140px] font-mono text-sm leading-6"
+                  placeholder={`### Common collocations\n- **make a decision** = đưa ra quyết định\n- **deeply concerned** = vô cùng lo ngại`}
+                  rows={6}
+                  value={formData.collocations}
+                  onChange={e => setFormData({ ...formData, collocations: e.target.value })}
                 />
               </div>
 
@@ -355,7 +364,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                       onCancel();
                       return;
                     }
-                    setFormData({ word: "", type: "noun", level: "", ipa: "", synonyms: "", verbPattern: "", relatedForms: "", meaning: "", context: "", example: "" });
+                    setFormData({ word: "", type: "noun", level: "", ipa: "", synonyms: "", verbPattern: "", collocations: "", relatedForms: "", meaning: "", example: "" });
                     setSelectedTopicId(AI_DECIDE_TOPIC);
                   }}
                   className="w-full sm:w-auto px-6 py-2.5 rounded-lg font-bold text-on-surface-variant hover:bg-surface-container-high"
@@ -404,6 +413,10 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                 <div className="bg-surface-container-lowest/50 rounded-lg p-4">
                   <p className="text-xs font-bold text-primary mb-1">VERB PATTERN</p>
                   <p className="text-sm text-on-surface-variant leading-relaxed">{aiFeedback.verbPattern || "Not applicable."}</p>
+                </div>
+                <div className="bg-surface-container-lowest/50 rounded-lg p-4">
+                  <p className="text-xs font-bold text-primary mb-1">COLLOCATIONS</p>
+                  <p className="text-sm text-on-surface-variant leading-relaxed whitespace-pre-wrap">{aiFeedback.collocations || "No collocations suggested."}</p>
                 </div>
                 <div className="bg-surface-container-lowest/50 rounded-lg p-4">
                   <p className="text-xs font-bold text-primary mb-1">RELATED FORMS</p>

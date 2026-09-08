@@ -372,18 +372,13 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
               <thead>
                 <tr className="bg-[#fafafa] text-[#333] font-bold tracking-wide border-b border-outline-variant/30">
                   <th className="px-6 py-4 text-left">Word</th>
-                  <th className="px-6 py-4 text-left">Type</th>
-                  <th className="px-6 py-4 text-center">Level</th>
-                  <th className="px-6 py-4 text-left">Topic</th>
-                  <th className="px-6 py-4 text-left">IPA</th>
-                  <th className="px-6 py-4 text-left">Synonyms</th>
-                  <th className="px-6 py-4 text-center">Status</th>
+                  <th className="px-6 py-4 text-left">Meaning</th>
+                  <th className="px-6 py-4 text-left">Example Sentence</th>
                   <th className="px-6 py-4 text-right"><span className="sr-only">Action</span></th>
                 </tr>
               </thead>
               <tbody>
                 {pagedVocab.map(v => {
-                  const status = getStatus(v);
                   return (
                     <tr
                       key={v.id}
@@ -393,25 +388,11 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
                       <td className="px-6 py-5 rounded-l-xl">
                         <span className="font-headline font-bold text-lg text-on-background">{v.word}</span>
                       </td>
-                      <td className="px-6 py-5 text-on-surface-variant font-medium capitalize">{v.type}</td>
-                      <td className="px-6 py-5 text-on-surface-variant font-medium text-center">
-                        {v.level ? v.level.toUpperCase() : "-"}
+                      <td className="px-6 py-5 text-on-surface-variant leading-relaxed max-w-[280px]">
+                        <p className="line-clamp-3">{v.meaning || "-"}</p>
                       </td>
-                      <td className="px-6 py-5 text-on-surface-variant font-medium">
-                        {topicNameById.get(v.topicId) || "Unclassified"}
-                      </td>
-                      <td className="px-6 py-5 font-mono text-primary text-sm">{v.ipa}</td>
-                      <td className="px-6 py-5 text-on-surface-variant text-sm max-w-[240px] truncate" title={v.synonyms || ""}>
-                        {v.synonyms || "-"}
-                      </td>
-                      <td className="px-6 py-5 text-center">
-                        <span className={`px-3 py-1 text-[10px] font-bold rounded-full uppercase ${
-                          status === "mastered" ? "bg-secondary-container text-on-secondary-container" :
-                          status === "learning" ? "bg-primary-container text-primary" :
-                          "bg-surface-container-highest text-on-surface-variant"
-                        }`}>
-                          {status}
-                        </span>
+                      <td className="px-6 py-5 text-on-surface-variant leading-relaxed max-w-[360px]">
+                        <p className="line-clamp-3 whitespace-pre-wrap">{v.example || "-"}</p>
                       </td>
                       <td className="px-6 py-5 text-right rounded-r-xl">
                         <div className="flex justify-end gap-2">
@@ -444,7 +425,6 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
 
           <div className="md:hidden space-y-3">
             {pagedVocab.map(v => {
-              const status = getStatus(v);
               return (
                 <div
                   key={v.id}
@@ -454,29 +434,14 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <h5 className="font-headline font-bold text-lg text-on-background leading-tight">{v.word}</h5>
-                      <p className="text-xs text-primary font-mono mt-1">{v.ipa}</p>
-                      <p className="text-xs text-on-surface-variant mt-1">
-                        {topicNameById.get(v.topicId) || "Unclassified"}
-                      </p>
                     </div>
-                    <span className={`px-2.5 py-1 text-[10px] font-bold rounded-full uppercase ${
-                      status === "mastered" ? "bg-secondary-container text-on-secondary-container" :
-                      status === "learning" ? "bg-primary-container text-primary" :
-                      "bg-surface-container-highest text-on-surface-variant"
-                    }`}>
-                      {status}
-                    </span>
                   </div>
-                  <p className="text-xs text-on-surface-variant mt-2">
-                    <span className="font-semibold text-on-background/80">Synonyms:</span> {v.synonyms || "-"}
-                  </p>
                   <p className="text-sm text-on-surface-variant mt-2 line-clamp-2">{v.meaning}</p>
+                  <p className="text-sm text-on-surface-variant mt-2 line-clamp-3 whitespace-pre-wrap">
+                    <span className="font-semibold text-on-background/80">Example Sentence:</span> {v.example || "-"}
+                  </p>
                   <div className="mt-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs text-on-surface-variant">
-                      <span className="capitalize">{v.type}</span>
-                      <span>•</span>
-                      <span>{v.level ? v.level.toUpperCase() : "-"}</span>
-                    </div>
+                    <span className="text-xs text-on-surface-variant">Meaning</span>
                     <div className="flex gap-1">
                       <button
                         onClick={(e) => {
@@ -626,8 +591,8 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
 
               <div className="space-y-5 sm:space-y-6">
                 <section>
-                  <h5 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Context</h5>
-                  <p className="text-on-surface-variant italic leading-relaxed">"{viewingWord.context}"</p>
+                  <h5 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Collocations</h5>
+                  <p className="text-on-surface-variant leading-relaxed whitespace-pre-wrap">{viewingWord.collocations || "Unspecified"}</p>
                 </section>
                 <section>
                   <h5 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Example Sentence</h5>

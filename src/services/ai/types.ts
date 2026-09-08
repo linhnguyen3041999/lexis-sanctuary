@@ -5,9 +5,9 @@ export interface VocabInput {
   ipa?: string;
   synonyms?: string;
   verbPattern?: string;
+  collocations?: string;
   relatedForms?: string;
   meaning?: string;
-  context?: string;
   example?: string;
 }
 
@@ -18,9 +18,9 @@ export interface VocabValidationResult {
   ipa: string;
   synonyms: string;
   verbPattern: string;
+  collocations: string;
   relatedForms: string;
   meaning: string;
-  context: string;
   example: string;
   topic: string;
   isCorrect: boolean;

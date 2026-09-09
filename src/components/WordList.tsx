@@ -368,13 +368,13 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
 
         <div className="px-4 sm:px-8 pb-4 sm:pb-8">
           <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-left border-separate border-spacing-y-3">
+            <table className="w-full table-fixed text-left border-separate border-spacing-y-3">
               <thead>
                 <tr className="bg-[#fafafa] text-[#333] font-bold tracking-wide border-b border-outline-variant/30">
-                  <th className="px-6 py-4 text-left">Word</th>
-                  <th className="px-6 py-4 text-left">Meaning</th>
-                  <th className="px-6 py-4 text-left">Example Sentence</th>
-                  <th className="px-6 py-4 text-right"><span className="sr-only">Action</span></th>
+                  <th className="w-[20%] px-6 py-4 text-left">Word</th>
+                  <th className="w-[25%] px-6 py-4 text-left">Meaning</th>
+                  <th className="w-[40%] px-6 py-4 text-left">Example Sentence</th>
+                  <th className="w-[15%] px-6 py-4 text-right"><span className="sr-only">Action</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -388,11 +388,11 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
                       <td className="px-6 py-5 rounded-l-xl">
                         <span className="font-headline font-bold text-lg text-on-background">{v.word}</span>
                       </td>
-                      <td className="px-6 py-5 text-on-surface-variant leading-relaxed max-w-[280px]">
-                        <p className="line-clamp-3">{v.meaning || "-"}</p>
+                      <td className="px-6 py-5 text-on-surface-variant leading-relaxed">
+                        <p className="line-clamp-2 break-words" title={v.meaning || "-"}>{v.meaning || "-"}</p>
                       </td>
-                      <td className="px-6 py-5 text-on-surface-variant leading-relaxed max-w-[360px]">
-                        <p className="line-clamp-3 whitespace-pre-wrap">{v.example || "-"}</p>
+                      <td className="px-6 py-5 text-on-surface-variant leading-relaxed">
+                        <p className="line-clamp-2 whitespace-pre-wrap break-words" title={v.example || "-"}>{v.example || "-"}</p>
                       </td>
                       <td className="px-6 py-5 text-right rounded-r-xl">
                         <div className="flex justify-end gap-2">
@@ -437,9 +437,10 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
                     </div>
                   </div>
                   <p className="text-sm text-on-surface-variant mt-2 line-clamp-2">{v.meaning}</p>
-                  <p className="text-sm text-on-surface-variant mt-2 line-clamp-3 whitespace-pre-wrap">
-                    <span className="font-semibold text-on-background/80">Example Sentence:</span> {v.example || "-"}
-                  </p>
+                  <div className="mt-2">
+                    <p className="text-xs font-semibold text-on-background/80 mb-1">Example Sentence:</p>
+                    <p className="text-sm text-on-surface-variant whitespace-pre-wrap break-words">{v.example || "-"}</p>
+                  </div>
                   <div className="mt-3 flex items-center justify-between">
                     <span className="text-xs text-on-surface-variant">Meaning</span>
                     <div className="flex gap-1">
@@ -597,7 +598,7 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
                 <section>
                   <h5 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Example Sentence</h5>
                   <div className="p-4 bg-surface-container-low rounded-2xl border border-outline-variant/5">
-                    <p className="text-on-background leading-relaxed">{viewingWord.example}</p>
+                    <p className="text-on-background leading-relaxed whitespace-pre-wrap break-words">{viewingWord.example}</p>
                   </div>
                 </section>
               </div>

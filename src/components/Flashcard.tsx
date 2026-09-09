@@ -197,11 +197,12 @@ export default function Flashcard() {
           <div ref={backMeasureRef} className="bg-surface-container-lowest rounded-xl p-5 sm:p-8 md:p-12 border border-outline-variant/10">
             <span className="text-sm md:text-base text-primary/70 mb-4 block tracking-widest font-medium break-all">{currentWord?.ipa?.toLowerCase()}</span>
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-headline font-extrabold text-on-background tracking-tighter mb-4 sm:mb-6 leading-none break-words text-center">{currentWord?.word}</h1>
+            <span className="text-sm text-on-surface-variant font-medium capitalize mb-4 block">{currentWord?.type}</span>
             <div className="h-px w-16 bg-surface-container-high mx-auto mb-6 sm:mb-8"></div>
             <div className="space-y-3 sm:space-y-4 max-w-lg mx-auto w-full">
               <p className="text-base sm:text-lg md:text-xl text-on-surface font-medium leading-relaxed text-center">{currentWord?.meaning}</p>
-              <div className="bg-surface-container-low p-4 rounded-lg text-sm italic text-on-surface-variant text-left border-l-2 border-primary/30">
-                "{currentWord?.example}"
+              <div className="bg-surface-container-low p-4 rounded-lg text-sm text-on-surface-variant text-left border-l-2 border-primary/30 whitespace-pre-wrap break-words">
+                {currentWord?.example}
               </div>
             </div>
           </div>
@@ -228,11 +229,12 @@ export default function Flashcard() {
               <div className="relative z-10 w-full">
                 <span className="text-sm md:text-base text-primary/70 mb-4 block tracking-widest font-medium break-all">{currentWord?.ipa?.toLowerCase()}</span>
                 <h1 className="text-3xl sm:text-4xl md:text-5xl font-headline font-extrabold text-on-background tracking-tighter mb-4 sm:mb-6 leading-none break-words">{currentWord?.word}</h1>
+                <span className="text-sm text-on-surface-variant font-medium capitalize mb-4 block">{currentWord?.type}</span>
                 <div className="h-px w-16 bg-surface-container-high mx-auto mb-6 sm:mb-8"></div>
                 <div className="space-y-3 sm:space-y-4 max-w-lg mx-auto">
                   <p className="text-base sm:text-lg md:text-xl text-on-surface font-medium leading-relaxed">{currentWord?.meaning}</p>
-                  <div className="bg-surface-container-low p-4 rounded-lg text-sm italic text-on-surface-variant text-left border-l-2 border-primary/30">
-                    "{currentWord?.example}"
+                  <div className="bg-surface-container-low p-4 rounded-lg text-sm text-on-surface-variant text-left border-l-2 border-primary/30 whitespace-pre-wrap break-words">
+                    {currentWord?.example}
                   </div>
                 </div>
               </div>

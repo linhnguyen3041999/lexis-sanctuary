@@ -15,6 +15,8 @@ export default function Flashcard() {
   const [loading, setLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [cardHeight, setCardHeight] = useState(0);
+  const [sessionWordIds, setSessionWordIds] = useState<string[]>([]);
+  const [sessionComplete, setSessionComplete] = useState(false);
   const frontMeasureRef = useRef<HTMLDivElement | null>(null);
   const backMeasureRef = useRef<HTMLDivElement | null>(null);
 
@@ -89,19 +91,32 @@ export default function Flashcard() {
     });
   }, [vocabulary, progress, selectedTopicId]);
 
-  const currentWord = dueWords[currentIndex];
+  // Keep the session list stable while SRS updates remove reviewed words from dueWords.
+  const sessionWords = useMemo(
+    () => sessionWordIds
+      .map(wordId => vocabulary.find(word => word.id === wordId))
+      .filter((word): word is Vocabulary => Boolean(word)),
+    [sessionWordIds, vocabulary]
+  );
+
+  const currentWord = sessionWords[currentIndex];
   const currentProgress = progress.find(p => p.wordId === currentWord?.id);
 
-  // Reset index if it goes out of bounds due to data changes
   React.useEffect(() => {
-    if (currentIndex >= dueWords.length && dueWords.length > 0) {
-      setCurrentIndex(0);
+    if (sessionWordIds.length === 0 && dueWords.length > 0) {
+      setSessionWordIds(
+        dueWords
+          .map(word => word.id)
+          .filter((id): id is string => Boolean(id))
+      );
     }
-  }, [dueWords.length, currentIndex]);
+  }, [dueWords, sessionWordIds.length]);
 
   React.useEffect(() => {
     setCurrentIndex(0);
     setFlipped(false);
+    setSessionWordIds([]);
+    setSessionComplete(false);
   }, [selectedTopicId]);
 
   useEffect(() => {
@@ -130,11 +145,12 @@ export default function Flashcard() {
       await updateDoc(doc(db, "progress", currentProgress.id!), updates);
       
       setFlipped(false);
-      if (currentIndex < dueWords.length - 1) {
+      if (currentIndex < sessionWords.length - 1) {
         setCurrentIndex(currentIndex + 1);
       } else {
         // Finished session
         setCurrentIndex(0);
+        setSessionComplete(true);
       }
     } catch (error) {
       console.error("Review Error:", error);
@@ -143,7 +159,7 @@ export default function Flashcard() {
     }
   };
 
-  if (dueWords.length === 0) {
+  if (sessionComplete || sessionWords.length === 0) {
     return (
       <div className="h-[60vh] flex flex-col items-center justify-center text-center">
         <div className="w-16 h-16 bg-primary-container rounded-full flex items-center justify-center text-primary mb-6">
@@ -176,12 +192,12 @@ export default function Flashcard() {
         </div>
         <div className="flex justify-between items-end mb-2">
           <span className="text-xs font-bold text-primary tracking-widest uppercase">Session Progress</span>
-          <span className="text-xs text-on-surface-variant font-medium">{currentIndex + 1} / {dueWords.length}</span>
+          <span className="text-xs text-on-surface-variant font-medium">{currentIndex + 1} / {sessionWords.length}</span>
         </div>
         <div className="w-full h-2 bg-surface-container-highest rounded-full overflow-hidden">
           <div 
             className="h-full bg-primary transition-all duration-500" 
-            style={{ width: `${((currentIndex + 1) / dueWords.length) * 100}%` }}
+            style={{ width: `${((currentIndex + 1) / sessionWords.length) * 100}%` }}
           ></div>
         </div>
       </div>

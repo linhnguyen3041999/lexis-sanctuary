@@ -30,7 +30,8 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
   const [filterTopicId, setFilterTopicId] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteIds, setDeleteIds] = useState<string[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [viewingWord, setViewingWord] = useState<Vocabulary | null>(null);
   const [isListening, setIsListening] = useState(false);
   const hasLoadedStoredFiltersRef = useRef(false);
@@ -121,18 +122,38 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
   };
 
   const handleDelete = async () => {
-    if (!deleteId) return;
+    if (deleteIds.length === 0) return;
     try {
-      await deleteDoc(doc(db, "vocabulary", deleteId));
-      // Also delete progress
-      const p = progress.find(pr => pr.wordId === deleteId);
-      if (p?.id) {
-        await deleteDoc(doc(db, "progress", p.id));
-      }
-      setDeleteId(null);
+      await Promise.all(deleteIds.map(async id => {
+        await deleteDoc(doc(db, "vocabulary", id));
+        const wordProgress = progress.find(pr => pr.wordId === id);
+        if (wordProgress?.id) {
+          await deleteDoc(doc(db, "progress", wordProgress.id));
+        }
+      }));
+      setSelectedIds(current => current.filter(id => !deleteIds.includes(id)));
+      setDeleteIds([]);
     } catch (error) {
       console.error("Delete Error:", error);
     }
+  };
+
+  const requestDelete = (ids: string[]) => {
+    if (ids.length > 0) setDeleteIds(ids);
+  };
+
+  const toggleSelected = (wordId: string) => {
+    setSelectedIds(current => current.includes(wordId)
+      ? current.filter(id => id !== wordId)
+      : [...current, wordId]);
+  };
+
+  const toggleSelectAll = () => {
+    const pageIds = pagedVocab.map(word => word.id).filter((id): id is string => Boolean(id));
+    const allSelected = pageIds.length > 0 && pageIds.every(id => selectedIds.includes(id));
+    setSelectedIds(current => allSelected
+      ? current.filter(id => !pageIds.includes(id))
+      : Array.from(new Set([...current, ...pageIds])));
   };
 
   useEffect(() => {
@@ -142,7 +163,8 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
     setFilterTopicId("");
     setFilterStatus("");
     setCurrentPage(1);
-    setDeleteId(null);
+    setDeleteIds([]);
+    setSelectedIds([]);
     setViewingWord(null);
   }, [resetToRootSignal]);
 
@@ -272,6 +294,9 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
     (currentPageSafe - 1) * PAGE_SIZE,
     currentPageSafe * PAGE_SIZE,
   );
+  const areAllPagedWordsSelected = pagedVocab.length > 0 && pagedVocab
+    .filter(word => word.id)
+    .every(word => selectedIds.includes(word.id!));
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -361,8 +386,29 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
             <h4 className="text-lg sm:text-xl font-headline font-bold text-on-background">All Vocabulary</h4>
             <p className="text-sm text-on-surface-variant">Showing {filteredVocab.length} terms</p>
           </div>
-          <div className="text-xs text-on-surface-variant">
-            Page {currentPageSafe} of {totalPages}
+          <div className="flex items-center gap-3">
+            <label className="md:hidden flex items-center gap-2 text-xs text-on-surface-variant">
+              <input
+                type="checkbox"
+                checked={areAllPagedWordsSelected}
+                onChange={toggleSelectAll}
+                aria-label="Select all words on this page"
+                className="h-4 w-4 accent-primary"
+              />
+              Select all
+            </label>
+            {selectedIds.length > 0 && (
+              <button
+                type="button"
+                onClick={() => requestDelete(selectedIds)}
+                className="px-3 py-2 rounded-lg bg-error text-on-error text-xs font-bold hover:shadow-md transition-shadow"
+              >
+                Delete selected ({selectedIds.length})
+              </button>
+            )}
+            <div className="text-xs text-on-surface-variant">
+              Page {currentPageSafe} of {totalPages}
+            </div>
           </div>
         </div>
 
@@ -371,7 +417,16 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
             <table className="w-full table-fixed text-left border-separate border-spacing-y-3">
               <thead>
                 <tr className="bg-[#fafafa] text-[#333] font-bold tracking-wide border-b border-outline-variant/30">
-                  <th className="w-[20%] px-6 py-4 text-left">Word</th>
+                  <th className="w-[6%] px-6 py-4 text-left">
+                    <input
+                      type="checkbox"
+                      checked={areAllPagedWordsSelected}
+                      onChange={toggleSelectAll}
+                      aria-label="Select all words on this page"
+                      className="h-4 w-4 accent-primary"
+                    />
+                  </th>
+                  <th className="w-[18%] px-6 py-4 text-left">Word</th>
                   <th className="w-[25%] px-6 py-4 text-left">Meaning</th>
                   <th className="w-[40%] px-6 py-4 text-left">Example Sentence</th>
                   <th className="w-[15%] px-6 py-4 text-right"><span className="sr-only">Action</span></th>
@@ -385,6 +440,16 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
                       onClick={() => setViewingWord(v)}
                       className="bg-surface-container-lowest hover:bg-white transition-colors group cursor-pointer"
                     >
+                      <td className="px-6 py-5">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(v.id || "")}
+                          onChange={() => v.id && toggleSelected(v.id)}
+                          onClick={e => e.stopPropagation()}
+                          aria-label={`Select ${v.word}`}
+                          className="h-4 w-4 accent-primary"
+                        />
+                      </td>
                       <td className="px-6 py-5 rounded-l-xl">
                         <span className="font-headline font-bold text-lg text-on-background">{v.word}</span>
                       </td>
@@ -408,7 +473,7 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setDeleteId(v.id!);
+                              requestDelete([v.id!]);
                             }}
                             className="p-2 text-on-surface-variant hover:text-error transition-colors"
                           >
@@ -432,7 +497,15 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
                   className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/10"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div>
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(v.id || "")}
+                        onChange={() => v.id && toggleSelected(v.id)}
+                        onClick={e => e.stopPropagation()}
+                        aria-label={`Select ${v.word}`}
+                        className="mt-1 h-4 w-4 accent-primary"
+                      />
                       <h5 className="font-headline font-bold text-lg text-on-background leading-tight">{v.word}</h5>
                     </div>
                   </div>
@@ -456,7 +529,7 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          setDeleteId(v.id!);
+                          requestDelete([v.id!]);
                         }}
                         className="p-2 text-on-surface-variant hover:text-error transition-colors"
                       >
@@ -496,7 +569,7 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
         </div>
       </section>
 
-      {deleteId && (
+      {deleteIds.length > 0 && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-surface-container-lowest rounded-2xl p-8 max-w-sm w-full shadow-2xl border border-outline-variant/10">
             <div className="w-12 h-12 bg-error-container rounded-full flex items-center justify-center text-error mb-6">
@@ -504,11 +577,11 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
             </div>
             <h3 className="text-xl font-headline font-bold text-on-background mb-2">Delete Word?</h3>
             <p className="text-on-surface-variant mb-8">
-              This will permanently remove this word and all its learning progress from your sanctuary.
+              This will permanently remove {deleteIds.length === 1 ? "this word" : `${deleteIds.length} words`} and all associated learning progress from your sanctuary.
             </p>
             <div className="flex gap-4">
               <button
-                onClick={() => setDeleteId(null)}
+                onClick={() => setDeleteIds([])}
                 className="flex-1 py-3 rounded-xl font-bold text-on-surface-variant hover:bg-surface-container-high transition-colors"
               >
                 Cancel
@@ -608,7 +681,7 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
               <button
                 onClick={() => {
                   setViewingWord(null);
-                  setDeleteId(viewingWord.id!);
+                  requestDelete([viewingWord.id!]);
                 }}
                 className="w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-error hover:bg-error-container/50 transition-colors"
               >

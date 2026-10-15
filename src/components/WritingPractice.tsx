@@ -36,7 +36,11 @@ export default function WritingPractice() {
 
   const handleCheck = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!answer.trim() || checked) return;
+    if (checked) {
+      handleNext();
+      return;
+    }
+    if (!answer.trim()) return;
     setChecked(true);
   };
 
@@ -102,8 +106,11 @@ export default function WritingPractice() {
             id="writing-answer"
             type="text"
             value={answer}
-            onChange={event => setAnswer(event.target.value)}
-            disabled={checked}
+            onChange={event => {
+              const value = event.target.value;
+              setAnswer(value ? value[0].toLocaleUpperCase() + value.slice(1) : value);
+            }}
+            readOnly={checked}
             autoComplete="off"
             className="min-w-0 flex-1 rounded-t-xl sm:rounded-l-xl sm:rounded-tr-none border border-outline-variant/30 bg-white px-5 py-4 text-lg text-on-surface outline-none focus:border-primary disabled:bg-surface-container-low"
             placeholder="Nhập từ tiếng Anh..."

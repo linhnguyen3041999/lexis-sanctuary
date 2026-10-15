@@ -5,7 +5,14 @@ import { useFirebase } from "../hooks/useFirebase";
 import { Vocabulary, UserProgress, SRSLevel } from "../types";
 import { calculateNextReview } from "../services/srsService";
 import { isBefore, format } from "date-fns";
-import { GoogleGenAI, Modality } from "@google/genai";
+
+function getEnglishExample(example: string): string {
+  return example
+    .split(/\r?\n/)
+    .filter(line => !/^\s*(?:→|⇒|➜|->)/.test(line))
+    .join("\n")
+    .trim();
+}
 
 export default function Flashcard() {
   const { vocabulary, progress, topics } = useFirebase();
@@ -20,61 +27,29 @@ export default function Flashcard() {
   const frontMeasureRef = useRef<HTMLDivElement | null>(null);
   const backMeasureRef = useRef<HTMLDivElement | null>(null);
 
-  const handleListen = async (text: string) => {
+  const handleListen = (text: string) => {
     if (isListening) return;
+    if (!("speechSynthesis" in window)) {
+      console.error("Speech synthesis is not supported in this browser.");
+      return;
+    }
+
     setIsListening(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text: `Pronounce clearly: ${text}` }] }],
-        config: {
-          responseModalities: [Modality.AUDIO],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: 'Kore' },
-            },
-          },
-        },
-      });
-
-      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-      if (base64Audio) {
-        const binaryString = atob(base64Audio);
-        const len = binaryString.length;
-        const bytes = new Uint8Array(len);
-        for (let i = 0; i < len; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-
-        // Create WAV header for 24kHz, 16-bit mono PCM
-        const wavHeader = new ArrayBuffer(44);
-        const view = new DataView(wavHeader);
-        const sampleRate = 24000;
-        
-        view.setUint32(0, 0x52494646, false); // "RIFF"
-        view.setUint32(4, 36 + len, true);    // File size
-        view.setUint32(8, 0x57415645, false); // "WAVE"
-        view.setUint32(12, 0x666d7420, false); // "fmt "
-        view.setUint32(16, 16, true);         // Subchunk1Size
-        view.setUint16(20, 1, true);          // AudioFormat (PCM)
-        view.setUint16(22, 1, true);          // NumChannels
-        view.setUint32(24, sampleRate, true); // SampleRate
-        view.setUint32(28, sampleRate * 2, true); // ByteRate
-        view.setUint16(32, 2, true);          // BlockAlign
-        view.setUint16(34, 16, true);         // BitsPerSample
-        view.setUint32(36, 0x64617461, false); // "data"
-        view.setUint32(40, len, true);        // Subchunk2Size
-
-        const wavBlob = new Blob([wavHeader, bytes], { type: 'audio/wav' });
-        const audioUrl = URL.createObjectURL(wavBlob);
-        const audio = new Audio(audioUrl);
-        audio.onended = () => URL.revokeObjectURL(audioUrl);
-        await audio.play();
-      }
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "en-US";
+      utterance.voice =
+        window.speechSynthesis.getVoices().find(voice => voice.lang.toLowerCase().startsWith("en-us")) ??
+        window.speechSynthesis.getVoices().find(voice => voice.lang.toLowerCase().startsWith("en")) ??
+        null;
+      utterance.onend = () => setIsListening(false);
+      utterance.onerror = event => {
+        console.error("Speech synthesis error:", event.error);
+        setIsListening(false);
+      };
+      window.speechSynthesis.speak(utterance);
     } catch (error) {
-      console.error("TTS Error:", error);
-    } finally {
+      console.error("Speech synthesis error:", error);
       setIsListening(false);
     }
   };
@@ -100,6 +75,7 @@ export default function Flashcard() {
   );
 
   const currentWord = sessionWords[currentIndex];
+  const englishExample = currentWord?.example ? getEnglishExample(currentWord.example) : "";
   const currentProgress = progress.find(p => p.wordId === currentWord?.id);
 
   React.useEffect(() => {
@@ -244,7 +220,22 @@ export default function Flashcard() {
             <div className="absolute inset-0 backface-hidden rotate-y-180 bg-surface-container-lowest rounded-xl p-5 sm:p-8 md:p-12 flex flex-col items-stretch justify-start text-center shadow-sm border border-outline-variant/10 overflow-y-auto">
               <div className="relative z-10 w-full">
                 <span className="text-sm md:text-base text-primary/70 mb-4 block tracking-widest font-medium break-all">{currentWord?.ipa?.toLowerCase()}</span>
-                <h1 className="text-3xl sm:text-4xl md:text-5xl font-headline font-extrabold text-on-background tracking-tighter mb-4 sm:mb-6 leading-none break-words">{currentWord?.word}</h1>
+                <div className="flex items-center justify-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+                  <h1 className="text-3xl sm:text-4xl md:text-5xl font-headline font-extrabold text-on-background tracking-tighter leading-none break-words">{currentWord?.word}</h1>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleListen(currentWord.word);
+                    }}
+                    disabled={isListening}
+                    aria-label="Listen to word"
+                    title="Listen to word"
+                    className="shrink-0 p-2 rounded-full text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors disabled:opacity-50"
+                  >
+                    {isListening ? <Loader2 className="w-5 h-5 animate-spin" /> : <Volume2 className="w-5 h-5" />}
+                  </button>
+                </div>
                 <span className="text-sm text-on-surface-variant font-medium capitalize mb-4 block">{currentWord?.type}</span>
                 <div className="h-px w-16 bg-surface-container-high mx-auto mb-6 sm:mb-8"></div>
                 <div className="space-y-3 sm:space-y-4 max-w-lg mx-auto">
@@ -252,6 +243,21 @@ export default function Flashcard() {
                   <div className="bg-surface-container-low p-4 rounded-lg text-sm text-on-surface-variant text-left border-l-2 border-primary/30 whitespace-pre-wrap break-words">
                     {currentWord?.example}
                   </div>
+                  {englishExample && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleListen(englishExample);
+                      }}
+                      disabled={isListening}
+                      aria-label="Listen to example"
+                      className="mx-auto flex items-center gap-2 text-sm font-medium text-on-surface-variant hover:text-primary transition-colors disabled:opacity-50"
+                    >
+                      {isListening ? <Loader2 className="w-4 h-4 animate-spin" /> : <Volume2 className="w-4 h-4" />}
+                      Listen example
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -280,19 +286,6 @@ export default function Flashcard() {
             ))}
           </div>
 
-          <div className="flex gap-6 items-center justify-center text-on-surface-variant">
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                handleListen(currentWord.word);
-              }}
-              disabled={isListening}
-              className="flex items-center gap-2 hover:text-primary transition-colors text-sm font-medium disabled:opacity-50"
-            >
-              {isListening ? <Loader2 className="w-5 h-5 animate-spin" /> : <Volume2 className="w-5 h-5" />}
-              Listen
-            </button>
-          </div>
         </div>
       )}
 

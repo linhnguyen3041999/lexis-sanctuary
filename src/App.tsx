@@ -8,6 +8,7 @@ import Layout from "./components/Layout";
 import Dashboard from "./components/Dashboard";
 import VocabForm from "./components/VocabForm";
 import Flashcard from "./components/Flashcard";
+import WritingPractice from "./components/WritingPractice";
 import WordList from "./components/WordList";
 import TopicManager from "./components/TopicManager";
 import { Vocabulary } from "./types";
@@ -41,6 +42,7 @@ export default function App() {
       {activeTab === "dashboard" && <Dashboard setActiveTab={setActiveTab} />}
       {activeTab === "vocabulary" && <VocabForm />}
       {activeTab === "flashcards" && <Flashcard />}
+      {activeTab === "writingPractice" && <WritingPractice />}
       {activeTab === "wordList" && (
         topicEditingWord ? (
           <VocabForm
@@ -56,4 +58,3 @@ export default function App() {
     </Layout>
   );
 }
-

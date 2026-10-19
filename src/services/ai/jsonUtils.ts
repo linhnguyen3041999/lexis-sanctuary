@@ -30,7 +30,7 @@ export function parseValidationResult(rawText: string): VocabValidationResult {
     relatedForms: parsed.relatedForms || "",
     meaning: parsed.meaning || "",
     example: parsed.example || "",
-    topic: parsed.topic || "General",
+    topic: typeof parsed.topic === "string" ? parsed.topic.trim() : "",
     isCorrect: typeof parsed.isCorrect === "boolean" ? parsed.isCorrect : false,
     suggestions: parsed.suggestions || "",
   };

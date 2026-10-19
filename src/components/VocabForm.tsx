@@ -5,7 +5,7 @@ import { useFirebase } from "../hooks/useFirebase";
 import { Vocabulary, Topic } from "../types";
 import { validateAndCompleteVocab } from "../services/aiService";
 
-const AI_DECIDE_TOPIC = "__ai_decide__";
+const AI_SELECT_TOPIC = "__ai_select_existing__";
 
 interface VocabFormProps {
   editingWord?: Vocabulary | null;
@@ -17,7 +17,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
   const { user, topics, vocabulary } = useFirebase();
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
-  const [selectedTopicId, setSelectedTopicId] = useState(editingWord?.topicId || AI_DECIDE_TOPIC);
+  const [selectedTopicId, setSelectedTopicId] = useState(editingWord?.topicId || AI_SELECT_TOPIC);
   const [isTopicPickerOpen, setIsTopicPickerOpen] = useState(false);
   const [topicSearch, setTopicSearch] = useState("");
   const topicPickerRef = useRef<HTMLDivElement>(null);
@@ -29,8 +29,8 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
     const normalizedSearch = topicSearch.trim().toLocaleLowerCase();
     return sortedTopics.filter(topic => topic.name.toLocaleLowerCase().includes(normalizedSearch));
   }, [sortedTopics, topicSearch]);
-  const selectedTopicName = selectedTopicId === AI_DECIDE_TOPIC
-    ? "AI suggest & decide (auto-create if needed)"
+  const selectedTopicName = selectedTopicId === AI_SELECT_TOPIC
+    ? "AI choose from existing topics"
     : topics.find(topic => topic.id === selectedTopicId)?.name || "Select a topic";
   const [formData, setFormData] = useState({
     word: editingWord?.word || "",
@@ -46,6 +46,9 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
     example: editingWord?.example || "",
   });
   const [aiFeedback, setAiFeedback] = useState<any>(null);
+  const aiTopicExists = Boolean(aiFeedback?.topic && sortedTopics.some(
+    topic => topic.name.trim().toLocaleLowerCase() === aiFeedback.topic.trim().toLocaleLowerCase(),
+  ));
 
   const capitalizeFirstLetter = (value: string) => {
     if (!value) return value;
@@ -75,9 +78,9 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
         meaning: editingWord.meaning,
         example: editingWord.example,
       });
-      setSelectedTopicId(editingWord.topicId || AI_DECIDE_TOPIC);
+      setSelectedTopicId(editingWord.topicId || AI_SELECT_TOPIC);
     } else {
-      setSelectedTopicId(AI_DECIDE_TOPIC);
+      setSelectedTopicId(AI_SELECT_TOPIC);
     }
   }, [editingWord]);
 
@@ -105,8 +108,17 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
     if (!formData.word) return;
     setAiLoading(true);
     try {
-      const result = await validateAndCompleteVocab(formData);
+      const result = await validateAndCompleteVocab({
+        ...formData,
+        availableTopics: sortedTopics.map(topic => topic.name),
+      });
+      const matchedTopic = sortedTopics.find(
+        topic => topic.name.trim().toLocaleLowerCase() === result.topic.trim().toLocaleLowerCase(),
+      );
       setAiFeedback(result);
+      if (matchedTopic?.id) {
+        setSelectedTopicId(matchedTopic.id);
+      }
       setFormData({
         ...formData,
         word: capitalizeFirstLetter(result.word || ""),
@@ -131,6 +143,14 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
   const handleSubmit = async () => {
     if (!user || !formData.word) return;
 
+    const selectedTopic = topics.find(topic => topic.id === selectedTopicId);
+    if (!selectedTopic?.id) {
+      alert(topics.length === 0
+        ? "Create a topic before saving vocabulary."
+        : "Run AI validation to choose an existing topic, or select one manually.");
+      return;
+    }
+
     const normalizedNewWord = formData.word.trim().toLowerCase();
     const duplicateWord = vocabulary.find((entry) => entry.word.trim().toLowerCase() === normalizedNewWord);
     if (!editingWord && duplicateWord) {
@@ -142,32 +162,11 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
     setLoading(true);
 
     try {
-      // 1. Handle Topic
-      let topicId = "";
-      if (selectedTopicId !== AI_DECIDE_TOPIC) {
-        topicId = selectedTopicId;
-      } else {
-        const topicName = aiFeedback?.topic || "General";
-        const existingTopic = topics.find(t => t.name.toLowerCase() === topicName.toLowerCase());
-
-        if (existingTopic) {
-          topicId = existingTopic.id!;
-        } else {
-          const newTopicRef = doc(collection(db, "topics"));
-          await setDoc(newTopicRef, {
-            name: topicName,
-            userId: user.uid,
-            isUnclassified: false,
-          });
-          topicId = newTopicRef.id;
-        }
-      }
-
-      // 2. Save Vocabulary
+      // Save Vocabulary
       const vocabRef = editingWord?.id ? doc(db, "vocabulary", editingWord.id) : doc(collection(db, "vocabulary"));
       const vocabData: Vocabulary = {
         ...formData,
-        topicId,
+        topicId: selectedTopic.id,
         userId: user.uid,
         createdAt: editingWord?.createdAt || serverTimestamp(),
       };
@@ -190,7 +189,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
       // Reset
       setFormData({ word: "", skillTags: [], type: "noun", level: "", ipa: "", synonyms: "", verbPattern: "", collocations: "", relatedForms: "", meaning: "", example: "" });
       setAiFeedback(null);
-      setSelectedTopicId(AI_DECIDE_TOPIC);
+      setSelectedTopicId(AI_SELECT_TOPIC);
       setTopicSearch("");
       setIsTopicPickerOpen(false);
       if (onSuccess) onSuccess();
@@ -334,15 +333,15 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                         <button
                           type="button"
                           role="option"
-                          aria-selected={selectedTopicId === AI_DECIDE_TOPIC}
+                          aria-selected={selectedTopicId === AI_SELECT_TOPIC}
                           className="w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-surface-container-low"
                           onClick={() => {
-                            setSelectedTopicId(AI_DECIDE_TOPIC);
+                            setSelectedTopicId(AI_SELECT_TOPIC);
                             setIsTopicPickerOpen(false);
                             setTopicSearch("");
                           }}
                         >
-                          AI suggest & decide (auto-create if needed)
+                          AI choose from existing topics
                         </button>
                         {filteredTopics.map((topic: Topic) => (
                           <button
@@ -352,7 +351,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                             aria-selected={selectedTopicId === topic.id}
                             className="w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-surface-container-low"
                             onClick={() => {
-                              setSelectedTopicId(topic.id || AI_DECIDE_TOPIC);
+                              setSelectedTopicId(topic.id || AI_SELECT_TOPIC);
                               setIsTopicPickerOpen(false);
                               setTopicSearch("");
                             }}
@@ -361,7 +360,9 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                           </button>
                         ))}
                         {filteredTopics.length === 0 && (
-                          <p className="px-3 py-2 text-sm text-on-surface-variant">No matching topics.</p>
+                          <p className="px-3 py-2 text-sm text-on-surface-variant">
+                            {topics.length === 0 ? "Create a topic first." : "No matching topics."}
+                          </p>
                         )}
                       </div>
                     </div>
@@ -493,7 +494,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                       return;
                     }
                     setFormData({ word: "", skillTags: [], type: "noun", level: "", ipa: "", synonyms: "", verbPattern: "", collocations: "", relatedForms: "", meaning: "", example: "" });
-                    setSelectedTopicId(AI_DECIDE_TOPIC);
+                    setSelectedTopicId(AI_SELECT_TOPIC);
                     setTopicSearch("");
                     setIsTopicPickerOpen(false);
                   }}
@@ -534,7 +535,9 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
               <div className="space-y-4">
                 <div className="bg-surface-container-lowest/50 rounded-lg p-4">
                   <p className="text-xs font-bold text-primary mb-1">TOPIC CLASSIFICATION</p>
-                  <p className="text-sm font-medium">{aiFeedback.topic}</p>
+                  <p className="text-sm font-medium">
+                    {aiTopicExists ? aiFeedback.topic : "No matching existing topic. Select one manually."}
+                  </p>
                 </div>
                 <div className="bg-surface-container-lowest/50 rounded-lg p-4">
                   <p className="text-xs font-bold text-primary mb-1">SKILL CONTEXT</p>

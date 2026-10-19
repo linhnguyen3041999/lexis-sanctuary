@@ -1,12 +1,13 @@
 import { VocabInput } from "./types";
 
 export function buildValidationPrompt(formData: VocabInput): string {
-  const { word, skillTags, type, level, ipa, synonyms, verbPattern, collocations, relatedForms, meaning, example } = formData;
+  const { word, availableTopics, skillTags, type, level, ipa, synonyms, verbPattern, collocations, relatedForms, meaning, example } = formData;
 
   return `
 You are a linguistics expert. Validate and complete the following English vocabulary entry.
 Word: ${word}
 Current skill tags: ${skillTags?.join(", ") || "none"}
+Available topics: ${JSON.stringify(availableTopics || [])}
 Type: ${type || "unknown"}
 Level: ${level || "unknown"}
 IPA pronunciation: ${ipa || "unknown"}
@@ -30,7 +31,7 @@ Rules:
 - Preserve valid existing skill tags when they fit; otherwise recommend the most appropriate tag(s). Return an array containing only "speaking" and/or "writing".
 - Word type should be one of: noun, verb, adjective, adverb, idiom, collocation.
 - Level should be one of: A1, A2, B1, B2, C1, C2. If uncertain, use "unknown".
-- Categorize the word into one high-level topic (e.g., Daily Life, Technology, Business, Nature, Travel, Emotions).
+- Choose exactly one topic from the available topics list based on the word's meaning and usage. Return the topic name exactly as listed. Never invent or create a topic. If the list is empty, return an empty string for topic.
 - Return ONLY valid JSON with these fields:
   word, skillTags, type, level, ipa, synonyms, verbPattern, collocations, relatedForms, meaning, example, topic, isCorrect, suggestions.
 `;

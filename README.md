@@ -6,6 +6,7 @@ Lexis Sanctuary is an AI-powered cognitive sanctuary designed for mastering Engl
 
 - **AI Vocabulary Validation:** Enter a word and get smart suggestions for IPA, meaning, context, and example sentences.
 - **Skill Context Tags:** Mark vocabulary for Speaking, Writing, or both; AI can recommend contexts and the vocabulary list can be filtered by skill.
+- **Topic Selection:** Let AI choose from your existing topics, or search and select a topic manually.
 - **Topic Exploration:** Organize your vocabulary into topics and explore them with detailed views.
 - **Flashcards (SRS):** Master your vocabulary using a Spaced Repetition System with interactive flashcards.
 - **AI Pronunciation (TTS):** Listen to high-quality AI-generated pronunciations for every word.

@@ -2,6 +2,7 @@ import { SkillTag } from "../../types";
 
 export interface VocabInput {
   word: string;
+  availableTopics?: string[];
   skillTags?: SkillTag[];
   type?: string;
   level?: string;

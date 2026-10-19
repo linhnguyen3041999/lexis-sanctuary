@@ -15,9 +15,17 @@ export async function validateWithGemini(formData: VocabInput): Promise<VocabVal
         type: Type.OBJECT,
         properties: {
           word: { type: Type.STRING },
+          skillTags: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING, format: "enum", enum: ["speaking", "writing"] },
+            description: "Useful English skill contexts for this word: speaking and/or writing",
+          },
           type: { type: Type.STRING },
           level: { type: Type.STRING },
-          ipa: { type: Type.STRING },
+          ipa: {
+            type: Type.STRING,
+            description: "Pronunciation split into hyphen-separated syllables, uppercase stressed syllable and lowercase unstressed syllables; e.g. PRIN-ci-ple. Do not use IPA symbols.",
+          },
           synonyms: { type: Type.STRING, description: "A concise comma-separated list of related English words or phrases" },
           verbPattern: { type: Type.STRING, description: "A useful verb usage formula, or an empty string when not relevant" },
           collocations: { type: Type.STRING, description: "A markdown-style text block with common word combinations" },
@@ -28,7 +36,7 @@ export async function validateWithGemini(formData: VocabInput): Promise<VocabVal
           isCorrect: { type: Type.BOOLEAN, description: "Whether the original input was mostly correct" },
           suggestions: { type: Type.STRING, description: "Brief explanation of changes made" }
         },
-        required: ["word", "type", "level", "ipa", "synonyms", "verbPattern", "collocations", "relatedForms", "meaning", "example", "topic", "isCorrect", "suggestions"]
+        required: ["word", "skillTags", "type", "level", "ipa", "synonyms", "verbPattern", "collocations", "relatedForms", "meaning", "example", "topic", "isCorrect", "suggestions"]
       }
     },
   });

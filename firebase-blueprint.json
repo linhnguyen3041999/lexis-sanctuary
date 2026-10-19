@@ -7,6 +7,11 @@
       "properties": {
         "word": { "type": "string", "description": "The vocabulary word or phrase." },
         "type": { "type": "string", "description": "Part of speech (noun, verb, adj, etc.)" },
+        "skillTags": {
+          "type": "array",
+          "description": "English skill contexts where this vocabulary is most useful.",
+          "items": { "type": "string", "enum": ["speaking", "writing"] }
+        },
         "ipa": { "type": "string", "description": "IPA pronunciation." },
         "meaning": { "type": "string", "description": "Definition of the word." },
         "context": { "type": "string", "description": "Usage context (formal, informal, etc.)" },

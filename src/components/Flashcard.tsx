@@ -14,6 +14,23 @@ function getEnglishExample(example: string): string {
     .trim();
 }
 
+function SkillTagBadges({ tags }: { tags?: Vocabulary["skillTags"] }) {
+  if (!tags?.length) return null;
+
+  return (
+    <div className="flex flex-wrap justify-center gap-2 mb-5">
+      {tags.map(tag => (
+        <span
+          key={tag}
+          className="rounded-full bg-surface-container-high px-3 py-1 text-xs font-semibold capitalize text-on-surface-variant"
+        >
+          {tag}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export default function Flashcard() {
   const { vocabulary, progress, topics } = useFirebase();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -190,6 +207,7 @@ export default function Flashcard() {
             <span className="text-sm md:text-base text-primary/70 mb-4 block tracking-widest font-medium break-all">{currentWord?.ipa?.toLowerCase()}</span>
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-headline font-extrabold text-on-background tracking-tighter mb-4 sm:mb-6 leading-none break-words text-center">{currentWord?.word}</h1>
             <span className="text-sm text-on-surface-variant font-medium capitalize mb-4 block">{currentWord?.type}</span>
+            <SkillTagBadges tags={currentWord?.skillTags} />
             <div className="h-px w-16 bg-surface-container-high mx-auto mb-6 sm:mb-8"></div>
             <div className="space-y-3 sm:space-y-4 max-w-lg mx-auto w-full">
               <p className="text-base sm:text-lg md:text-xl text-on-surface font-medium leading-relaxed text-center">{currentWord?.meaning}</p>
@@ -237,6 +255,7 @@ export default function Flashcard() {
                   </button>
                 </div>
                 <span className="text-sm text-on-surface-variant font-medium capitalize mb-4 block">{currentWord?.type}</span>
+                <SkillTagBadges tags={currentWord?.skillTags} />
                 <div className="h-px w-16 bg-surface-container-high mx-auto mb-6 sm:mb-8"></div>
                 <div className="space-y-3 sm:space-y-4 max-w-lg mx-auto">
                   <p className="text-base sm:text-lg md:text-xl text-on-surface font-medium leading-relaxed">{currentWord?.meaning}</p>

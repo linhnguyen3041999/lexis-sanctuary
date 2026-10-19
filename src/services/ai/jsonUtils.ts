@@ -1,5 +1,7 @@
 import { VocabValidationResult } from "./types";
 
+const SKILL_TAGS = ["speaking", "writing"] as const;
+
 function stripCodeFences(input: string): string {
   return input.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
 }
@@ -7,9 +9,18 @@ function stripCodeFences(input: string): string {
 export function parseValidationResult(rawText: string): VocabValidationResult {
   const cleaned = stripCodeFences(rawText || "{}");
   const parsed = JSON.parse(cleaned || "{}");
+  const skillTags = Array.isArray(parsed.skillTags)
+    ? Array.from(new Set(
+      parsed.skillTags
+        .map((tag: unknown) => typeof tag === "string" ? tag.toLowerCase() : "")
+        .filter((tag: string): tag is (typeof SKILL_TAGS)[number] =>
+          tag === "speaking" || tag === "writing"),
+    ))
+    : [];
 
   return {
     word: parsed.word || "",
+    skillTags,
     type: parsed.type || "noun",
     level: parsed.level || "",
     ipa: parsed.ipa || "",

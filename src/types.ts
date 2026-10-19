@@ -2,6 +2,7 @@ export interface Vocabulary {
   id?: string;
   word: string;
   type: string;
+  skillTags?: SkillTag[];
   level?: string;
   ipa: string;
   synonyms?: string;
@@ -14,6 +15,8 @@ export interface Vocabulary {
   userId: string;
   createdAt: any;
 }
+
+export type SkillTag = "speaking" | "writing";
 
 export interface Topic {
   id?: string;

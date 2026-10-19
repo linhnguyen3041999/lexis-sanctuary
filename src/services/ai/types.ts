@@ -1,5 +1,8 @@
+import { SkillTag } from "../../types";
+
 export interface VocabInput {
   word: string;
+  skillTags?: SkillTag[];
   type?: string;
   level?: string;
   ipa?: string;
@@ -13,6 +16,7 @@ export interface VocabInput {
 
 export interface VocabValidationResult {
   word: string;
+  skillTags: SkillTag[];
   type: string;
   level: string;
   ipa: string;

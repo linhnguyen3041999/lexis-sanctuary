@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Sparkles, Loader2, Save, Trash2 } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, Search, Sparkles, Loader2, Save, Trash2 } from "lucide-react";
 import { db, collection, setDoc, doc, serverTimestamp } from "../firebase";
 import { useFirebase } from "../hooks/useFirebase";
 import { Vocabulary, Topic } from "../types";
@@ -18,8 +18,23 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [selectedTopicId, setSelectedTopicId] = useState(editingWord?.topicId || AI_DECIDE_TOPIC);
+  const [isTopicPickerOpen, setIsTopicPickerOpen] = useState(false);
+  const [topicSearch, setTopicSearch] = useState("");
+  const topicPickerRef = useRef<HTMLDivElement>(null);
+  const sortedTopics = useMemo(
+    () => [...topics].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" })),
+    [topics],
+  );
+  const filteredTopics = useMemo(() => {
+    const normalizedSearch = topicSearch.trim().toLocaleLowerCase();
+    return sortedTopics.filter(topic => topic.name.toLocaleLowerCase().includes(normalizedSearch));
+  }, [sortedTopics, topicSearch]);
+  const selectedTopicName = selectedTopicId === AI_DECIDE_TOPIC
+    ? "AI suggest & decide (auto-create if needed)"
+    : topics.find(topic => topic.id === selectedTopicId)?.name || "Select a topic";
   const [formData, setFormData] = useState({
     word: editingWord?.word || "",
+    skillTags: editingWord?.skillTags || [],
     type: editingWord?.type || "noun",
     level: editingWord?.level || "",
     ipa: editingWord?.ipa || "",
@@ -49,6 +64,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
     if (editingWord) {
       setFormData({
         word: editingWord.word,
+        skillTags: editingWord.skillTags || [],
         type: editingWord.type,
         level: normalizeLevel(editingWord.level || ""),
         ipa: editingWord.ipa,
@@ -65,6 +81,26 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
     }
   }, [editingWord]);
 
+  useEffect(() => {
+    if (!isTopicPickerOpen) return;
+
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (event.target instanceof Node && !topicPickerRef.current?.contains(event.target)) {
+        setIsTopicPickerOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsTopicPickerOpen(false);
+    };
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [isTopicPickerOpen]);
+
   const handleAiValidate = async () => {
     if (!formData.word) return;
     setAiLoading(true);
@@ -74,6 +110,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
       setFormData({
         ...formData,
         word: capitalizeFirstLetter(result.word || ""),
+        skillTags: result.skillTags.length > 0 ? result.skillTags : formData.skillTags,
         type: result.type || "noun",
         level: normalizeLevel(result.level || ""),
         ipa: capitalizeFirstLetter(result.ipa || ""),
@@ -151,9 +188,11 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
       }
 
       // Reset
-      setFormData({ word: "", type: "noun", level: "", ipa: "", synonyms: "", verbPattern: "", collocations: "", relatedForms: "", meaning: "", example: "" });
+      setFormData({ word: "", skillTags: [], type: "noun", level: "", ipa: "", synonyms: "", verbPattern: "", collocations: "", relatedForms: "", meaning: "", example: "" });
       setAiFeedback(null);
       setSelectedTopicId(AI_DECIDE_TOPIC);
+      setTopicSearch("");
+      setIsTopicPickerOpen(false);
       if (onSuccess) onSuccess();
     } catch (error) {
       console.error("Save Error:", error);
@@ -227,24 +266,113 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                   <option value="C2">C2</option>
                 </select>
               </div>
+              <fieldset className="space-y-2 md:col-span-3">
+                <legend className="text-sm font-medium text-on-surface-variant ml-1">Skill context</legend>
+                <p className="text-xs text-on-surface-variant ml-1">Choose where this word is most useful. AI can suggest tags when you validate.</p>
+                <div className="flex flex-wrap gap-3">
+                  {(["speaking", "writing"] as const).map(skillTag => (
+                    <label
+                      key={skillTag}
+                      className="flex items-center gap-2 rounded-full bg-surface-container-low px-4 py-2 text-sm font-medium capitalize text-on-surface cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={formData.skillTags.includes(skillTag)}
+                        onChange={e => setFormData({
+                          ...formData,
+                          skillTags: e.target.checked
+                            ? [...formData.skillTags, skillTag]
+                            : formData.skillTags.filter(tag => tag !== skillTag),
+                        })}
+                        className="h-4 w-4 accent-primary"
+                      />
+                      {skillTag}
+                    </label>
+                  ))}
+                </div>
+                {aiFeedback?.skillTags?.length > 0 && (
+                  <p className="text-xs text-primary font-medium ml-1">
+                    AI suggestion: {aiFeedback.skillTags.join(", ")}
+                  </p>
+                )}
+              </fieldset>
               <div className="space-y-1.5 md:col-span-2">
                 <label className="text-sm font-medium text-on-surface-variant ml-1">Topic</label>
-                <select
-                  className="w-full bg-surface-container-low border border-outline-variant/40 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20"
-                  value={selectedTopicId}
-                  onChange={e => setSelectedTopicId(e.target.value)}
-                >
-                  <option value={AI_DECIDE_TOPIC}>AI suggest & decide (auto-create if needed)</option>
-                  {topics.map((topic: Topic) => (
-                    <option key={topic.id} value={topic.id}>{topic.name}</option>
-                  ))}
-                </select>
+                <div className="relative" ref={topicPickerRef}>
+                  <button
+                    type="button"
+                    className="w-full flex items-center justify-between gap-3 bg-surface-container-low border border-outline-variant/40 rounded-lg px-4 py-3 text-left focus:ring-2 focus:ring-primary/20"
+                    onClick={() => {
+                      setIsTopicPickerOpen(open => !open);
+                      setTopicSearch("");
+                    }}
+                    aria-haspopup="listbox"
+                    aria-controls="vocab-topic-options"
+                    aria-expanded={isTopicPickerOpen}
+                  >
+                    <span className="truncate">{selectedTopicName}</span>
+                    <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${isTopicPickerOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  {isTopicPickerOpen && (
+                    <div className="absolute z-20 mt-2 w-full rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-2 shadow-xl">
+                      <div className="relative mb-2">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
+                        <input
+                          type="search"
+                          autoFocus
+                          value={topicSearch}
+                          onChange={e => setTopicSearch(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === "Enter") e.preventDefault();
+                          }}
+                          placeholder="Search topics..."
+                          aria-label="Search topics"
+                          className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-low py-2 pl-9 pr-3 text-sm focus:ring-2 focus:ring-primary/20"
+                        />
+                      </div>
+                      <div id="vocab-topic-options" role="listbox" aria-label="Topics" className="max-h-60 overflow-y-auto">
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={selectedTopicId === AI_DECIDE_TOPIC}
+                          className="w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-surface-container-low"
+                          onClick={() => {
+                            setSelectedTopicId(AI_DECIDE_TOPIC);
+                            setIsTopicPickerOpen(false);
+                            setTopicSearch("");
+                          }}
+                        >
+                          AI suggest & decide (auto-create if needed)
+                        </button>
+                        {filteredTopics.map((topic: Topic) => (
+                          <button
+                            key={topic.id}
+                            type="button"
+                            role="option"
+                            aria-selected={selectedTopicId === topic.id}
+                            className="w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-surface-container-low"
+                            onClick={() => {
+                              setSelectedTopicId(topic.id || AI_DECIDE_TOPIC);
+                              setIsTopicPickerOpen(false);
+                              setTopicSearch("");
+                            }}
+                          >
+                            {topic.name}
+                          </button>
+                        ))}
+                        {filteredTopics.length === 0 && (
+                          <p className="px-3 py-2 text-sm text-on-surface-variant">No matching topics.</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-on-surface-variant ml-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
-                <span>IPA Pronunciation</span>
+                <span>Pronunciation (syllables)</span>
                 {aiFeedback?.ipa && (
                   <span className="text-xs text-primary font-medium flex items-center gap-1">
                     <Sparkles className="w-3 h-3" /> AI Suggestion: {aiFeedback?.ipa}
@@ -253,7 +381,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
               </label>
               <input 
                 className="w-full bg-surface-container-low border border-outline-variant/40 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20"
-                placeholder="/ɪˈfɛmərəl/"
+                placeholder="e.g., PRIN-ci-ple"
                 value={formData.ipa}
                 onChange={e => setFormData({ ...formData, ipa: capitalizeFirstLetter(e.target.value) })}
               />
@@ -364,8 +492,10 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                       onCancel();
                       return;
                     }
-                    setFormData({ word: "", type: "noun", level: "", ipa: "", synonyms: "", verbPattern: "", collocations: "", relatedForms: "", meaning: "", example: "" });
+                    setFormData({ word: "", skillTags: [], type: "noun", level: "", ipa: "", synonyms: "", verbPattern: "", collocations: "", relatedForms: "", meaning: "", example: "" });
                     setSelectedTopicId(AI_DECIDE_TOPIC);
+                    setTopicSearch("");
+                    setIsTopicPickerOpen(false);
                   }}
                   className="w-full sm:w-auto px-6 py-2.5 rounded-lg font-bold text-on-surface-variant hover:bg-surface-container-high"
                 >
@@ -405,6 +535,10 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                 <div className="bg-surface-container-lowest/50 rounded-lg p-4">
                   <p className="text-xs font-bold text-primary mb-1">TOPIC CLASSIFICATION</p>
                   <p className="text-sm font-medium">{aiFeedback.topic}</p>
+                </div>
+                <div className="bg-surface-container-lowest/50 rounded-lg p-4">
+                  <p className="text-xs font-bold text-primary mb-1">SKILL CONTEXT</p>
+                  <p className="text-sm text-on-surface-variant leading-relaxed capitalize">{aiFeedback.skillTags?.join(", ") || "No skill tags suggested."}</p>
                 </div>
                 <div className="bg-surface-container-lowest/50 rounded-lg p-4">
                   <p className="text-xs font-bold text-primary mb-1">SYNONYMS</p>

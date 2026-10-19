@@ -14,6 +14,7 @@ type WordListFilters = {
   filterLevel?: string;
   filterTopicId?: string;
   filterStatus?: string;
+  filterSkillTag?: string;
   currentPage?: number;
 };
 
@@ -29,6 +30,7 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
   const [filterLevel, setFilterLevel] = useState("");
   const [filterTopicId, setFilterTopicId] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [filterSkillTag, setFilterSkillTag] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [deleteIds, setDeleteIds] = useState<string[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -162,6 +164,7 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
     setFilterLevel("");
     setFilterTopicId("");
     setFilterStatus("");
+    setFilterSkillTag("");
     setCurrentPage(1);
     setDeleteIds([]);
     setSelectedIds([]);
@@ -182,6 +185,7 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
         setFilterLevel("");
         setFilterTopicId("");
         setFilterStatus("");
+        setFilterSkillTag("");
         setCurrentPage(1);
         hasLoadedStoredFiltersRef.current = true;
         return;
@@ -193,6 +197,7 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
       setFilterLevel(parsedFilters?.filterLevel || "");
       setFilterTopicId(parsedFilters?.filterTopicId || "");
       setFilterStatus(parsedFilters?.filterStatus || "");
+      setFilterSkillTag(parsedFilters?.filterSkillTag || "");
       setCurrentPage(
         parsedFilters?.currentPage && parsedFilters.currentPage > 0
           ? parsedFilters.currentPage
@@ -219,6 +224,7 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
       filterLevel,
       filterTopicId,
       filterStatus,
+      filterSkillTag,
       currentPage,
     };
 
@@ -227,7 +233,7 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
     } catch (error) {
       console.error("Word list filters persist error:", error);
     }
-  }, [filterStorageKey, search, filterType, filterLevel, filterTopicId, filterStatus, currentPage]);
+  }, [filterStorageKey, search, filterType, filterLevel, filterTopicId, filterStatus, filterSkillTag, currentPage]);
 
   useEffect(() => {
     if (!user) return;
@@ -282,11 +288,12 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
         const matchesLevel = !filterLevel || (v.level || "").toUpperCase() === filterLevel;
         const matchesTopic = !filterTopicId || v.topicId === filterTopicId;
         const matchesStatus = !filterStatus || getStatus(v) === filterStatus;
+        const matchesSkillTag = !filterSkillTag || v.skillTags?.some(tag => tag === filterSkillTag);
 
-        return matchesSearch && matchesType && matchesLevel && matchesTopic && matchesStatus;
+        return matchesSearch && matchesType && matchesLevel && matchesTopic && matchesStatus && matchesSkillTag;
       })
       .sort((a, b) => getCreatedAtMs(b.createdAt) - getCreatedAtMs(a.createdAt));
-  }, [vocabulary, search, filterType, filterLevel, filterTopicId, filterStatus, progress]);
+  }, [vocabulary, search, filterType, filterLevel, filterTopicId, filterStatus, filterSkillTag, progress]);
 
   const totalPages = Math.max(1, Math.ceil(filteredVocab.length / PAGE_SIZE));
   const currentPageSafe = Math.min(currentPage, totalPages);
@@ -312,7 +319,7 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
           <p className="text-on-surface-variant text-base sm:text-lg">All vocabulary sorted by newest additions.</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_repeat(4,1fr)] gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_repeat(5,1fr)] gap-3 sm:gap-4">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5" />
             <input
@@ -376,6 +383,18 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
             {statusOptions.map(option => (
               <option key={option} value={option}>{option}</option>
             ))}
+          </select>
+          <select
+            className="bg-surface-container-low border-none rounded-xl px-4 py-3 text-sm font-medium text-on-surface focus:ring-2 focus:ring-primary/20"
+            value={filterSkillTag}
+            onChange={e => {
+              setFilterSkillTag(e.target.value);
+              setCurrentPage(1);
+            }}
+          >
+            <option value="">All skill contexts</option>
+            <option value="speaking">Speaking</option>
+            <option value="writing">Writing</option>
           </select>
         </div>
       </header>
@@ -452,6 +471,15 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
                       </td>
                       <td className="px-6 py-5 rounded-l-xl">
                         <span className="font-headline font-bold text-lg text-on-background">{v.word}</span>
+                        {v.skillTags && v.skillTags.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {v.skillTags.map(tag => (
+                              <span key={tag} className="rounded-full bg-surface-container-high px-2.5 py-1 text-xs font-semibold capitalize text-on-surface-variant">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </td>
                       <td className="px-6 py-5 text-on-surface-variant leading-relaxed">
                         <p className="line-clamp-2 break-words" title={v.meaning || "-"}>{v.meaning || "-"}</p>
@@ -509,6 +537,15 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
                       <h5 className="font-headline font-bold text-lg text-on-background leading-tight">{v.word}</h5>
                     </div>
                   </div>
+                  {v.skillTags && v.skillTags.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {v.skillTags.map(tag => (
+                        <span key={tag} className="rounded-full bg-surface-container-high px-2.5 py-1 text-xs font-semibold capitalize text-on-surface-variant">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   <p className="text-sm text-on-surface-variant mt-2 line-clamp-2">{v.meaning}</p>
                   <div className="mt-2">
                     <p className="text-xs font-semibold text-on-background/80 mb-1">Example Sentence:</p>
@@ -640,6 +677,20 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
                   <span className="px-3 py-1 bg-surface-container-highest text-on-surface-variant rounded-full text-sm font-medium capitalize">
                     {viewingWord.type}
                   </span>
+                </section>
+                <section>
+                  <h5 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Skill Context</h5>
+                  {viewingWord.skillTags && viewingWord.skillTags.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {viewingWord.skillTags.map(tag => (
+                        <span key={tag} className="px-3 py-1 bg-surface-container-highest text-on-surface-variant rounded-full text-sm font-medium capitalize">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-on-surface-variant">Unspecified</p>
+                  )}
                 </section>
                 <section>
                   <h5 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Synonyms</h5>

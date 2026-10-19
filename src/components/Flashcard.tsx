@@ -198,13 +198,13 @@ export default function Flashcard() {
       <div className="relative w-full">
         <div className="absolute inset-x-0 top-0 opacity-0 pointer-events-none -z-10">
           <div ref={frontMeasureRef} className="bg-surface-container-lowest rounded-xl p-5 sm:p-8 md:p-12 border border-outline-variant/10">
-            <span className="text-sm md:text-base text-primary/70 mb-4 block tracking-widest font-medium break-all">{currentWord?.ipa?.toLowerCase()}</span>
+            <span className="text-sm md:text-base text-primary/70 mb-4 block tracking-widest font-medium break-all">{currentWord?.ipa}</span>
             <h1 className="text-4xl sm:text-5xl md:text-7xl font-headline font-extrabold text-on-background tracking-tighter mb-4 sm:mb-6 leading-none break-words">{currentWord?.word}</h1>
             <div className="h-px w-16 bg-surface-container-high mx-auto mb-6 sm:mb-8"></div>
             <p className="text-on-surface-variant text-sm font-medium text-center">Click to reveal meaning</p>
           </div>
           <div ref={backMeasureRef} className="bg-surface-container-lowest rounded-xl p-5 sm:p-8 md:p-12 border border-outline-variant/10">
-            <span className="text-sm md:text-base text-primary/70 mb-4 block tracking-widest font-medium break-all">{currentWord?.ipa?.toLowerCase()}</span>
+            <span className="text-sm md:text-base text-primary/70 mb-4 block tracking-widest font-medium break-all">{currentWord?.ipa}</span>
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-headline font-extrabold text-on-background tracking-tighter mb-4 sm:mb-6 leading-none break-words text-center">{currentWord?.word}</h1>
             <span className="text-sm text-on-surface-variant font-medium capitalize mb-4 block">{currentWord?.type}</span>
             <SkillTagBadges tags={currentWord?.skillTags} />
@@ -225,7 +225,7 @@ export default function Flashcard() {
         >
           <div className={`relative w-full h-full transition-all duration-500 transform-style-3d ${flipped ? "rotate-y-180" : ""}`}>
             <div className="absolute inset-0 backface-hidden bg-surface-container-lowest rounded-xl p-5 sm:p-8 md:p-12 flex flex-col items-center justify-center text-center shadow-sm border border-outline-variant/10 overflow-hidden">
-              <span className="text-sm md:text-base text-primary/70 mb-4 tracking-widest font-medium break-all">{currentWord?.ipa?.toLowerCase()}</span>
+              <span className="text-sm md:text-base text-primary/70 mb-4 tracking-widest font-medium break-all">{currentWord?.ipa}</span>
               <h1 className="text-4xl sm:text-5xl md:text-7xl font-headline font-extrabold text-on-background tracking-tighter mb-4 sm:mb-6 leading-none break-words">{currentWord?.word}</h1>
               <div className="h-px w-16 bg-surface-container-high mx-auto mb-6 sm:mb-8"></div>
               <p className="text-on-surface-variant text-sm font-medium">Click to reveal meaning</p>
@@ -237,7 +237,7 @@ export default function Flashcard() {
 
             <div className="absolute inset-0 backface-hidden rotate-y-180 bg-surface-container-lowest rounded-xl p-5 sm:p-8 md:p-12 flex flex-col items-stretch justify-start text-center shadow-sm border border-outline-variant/10 overflow-y-auto">
               <div className="relative z-10 w-full">
-                <span className="text-sm md:text-base text-primary/70 mb-4 block tracking-widest font-medium break-all">{currentWord?.ipa?.toLowerCase()}</span>
+                <span className="text-sm md:text-base text-primary/70 mb-4 block tracking-widest font-medium break-all">{currentWord?.ipa}</span>
                 <div className="flex items-center justify-center gap-2 sm:gap-3 mb-4 sm:mb-6">
                   <h1 className="text-3xl sm:text-4xl md:text-5xl font-headline font-extrabold text-on-background tracking-tighter leading-none break-words">{currentWord?.word}</h1>
                   <button

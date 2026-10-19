@@ -24,7 +24,7 @@ export async function validateWithGemini(formData: VocabInput): Promise<VocabVal
           level: { type: Type.STRING },
           ipa: {
             type: Type.STRING,
-            description: "Pronunciation split into hyphen-separated syllables, uppercase stressed syllable and lowercase unstressed syllables; e.g. PRIN-ci-ple. Do not use IPA symbols.",
+            description: "Standard IPA transcription enclosed in slashes, with ˈ for primary stress and periods between syllables; e.g. /ˈren.ə.veɪt/. Do not use respelling.",
           },
           synonyms: { type: Type.STRING, description: "A concise comma-separated list of related English words or phrases" },
           verbPattern: { type: Type.STRING, description: "A useful verb usage formula, or an empty string when not relevant" },

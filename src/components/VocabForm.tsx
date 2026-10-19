@@ -372,7 +372,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
 
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-on-surface-variant ml-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
-                <span>Pronunciation (syllables)</span>
+                <span>IPA Pronunciation</span>
                 {aiFeedback?.ipa && (
                   <span className="text-xs text-primary font-medium flex items-center gap-1">
                     <Sparkles className="w-3 h-3" /> AI Suggestion: {aiFeedback?.ipa}
@@ -381,7 +381,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
               </label>
               <input 
                 className="w-full bg-surface-container-low border border-outline-variant/40 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20"
-                placeholder="e.g., PRIN-ci-ple"
+                placeholder="e.g., /ˈren.ə.veɪt/"
                 value={formData.ipa}
                 onChange={e => setFormData({ ...formData, ipa: capitalizeFirstLetter(e.target.value) })}
               />

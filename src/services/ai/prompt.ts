@@ -9,7 +9,7 @@ Word: ${word}
 Current skill tags: ${skillTags?.join(", ") || "none"}
 Type: ${type || "unknown"}
 Level: ${level || "unknown"}
-Pronunciation by syllable: ${ipa || "unknown"}
+IPA pronunciation: ${ipa || "unknown"}
 Synonyms: ${synonyms || "unknown"}
 Verb pattern / usage formula: ${verbPattern || "unknown"}
 Collocations: ${collocations || "unknown"}
@@ -19,7 +19,7 @@ Example: ${example || "unknown"}
 
 Rules:
 - If any field is missing or incorrect, provide corrected information.
-- Put pronunciation in the "ipa" JSON field as syllables separated by hyphens, not IPA symbols. Use uppercase for the stressed syllable and lowercase for unstressed syllables; for example, "principle" should be "PRIN-ci-ple". For a one-syllable word, write the word in uppercase.
+- Put pronunciation in the "ipa" JSON field using standard IPA symbols, enclosed in slashes. Mark primary stress with ˈ and separate syllables with periods; for example, "renovate" should be /ˈren.ə.veɪt/. Do not use respelling such as "REN-o-vate".
 - Meaning must be concise and in Vietnamese.
 - Synonyms should be a concise comma-separated string of related English words or phrases.
 - Verb pattern should provide a useful usage formula for verbs, such as "be worth + V-ing" or "be worth + noun". Return an empty string when it is not relevant.

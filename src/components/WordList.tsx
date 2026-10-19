@@ -3,7 +3,6 @@ import { Search, Edit, Trash2, X, Volume2, Loader2 } from "lucide-react";
 import { useFirebase } from "../hooks/useFirebase";
 import { db, deleteDoc, doc, collection, query, where, getDocs, updateDoc } from "../firebase";
 import { Vocabulary } from "../types";
-import { GoogleGenAI, Modality } from "@google/genai";
 
 const PAGE_SIZE = 10;
 const WORD_LIST_FILTERS_STORAGE_KEY_PREFIX = "lexis:word-list-filters";
@@ -64,61 +63,29 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
   };
 
 
-  const handleListen = async (text: string) => {
+  const handleListen = (text: string) => {
     if (isListening) return;
+    if (!("speechSynthesis" in window)) {
+      console.error("Speech synthesis is not supported in this browser.");
+      return;
+    }
+
     setIsListening(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text: `Pronounce clearly: ${text}` }] }],
-        config: {
-          responseModalities: [Modality.AUDIO],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: "Kore" },
-            },
-          },
-        },
-      });
-
-      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-      if (base64Audio) {
-        const binaryString = atob(base64Audio);
-        const len = binaryString.length;
-        const bytes = new Uint8Array(len);
-        for (let i = 0; i < len; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-
-        // Create WAV header for 24kHz, 16-bit mono PCM
-        const wavHeader = new ArrayBuffer(44);
-        const view = new DataView(wavHeader);
-        const sampleRate = 24000;
-
-        view.setUint32(0, 0x52494646, false); // "RIFF"
-        view.setUint32(4, 36 + len, true); // File size
-        view.setUint32(8, 0x57415645, false); // "WAVE"
-        view.setUint32(12, 0x666d7420, false); // "fmt "
-        view.setUint32(16, 16, true); // Subchunk1Size
-        view.setUint16(20, 1, true); // AudioFormat (PCM)
-        view.setUint16(22, 1, true); // NumChannels
-        view.setUint32(24, sampleRate, true); // SampleRate
-        view.setUint32(28, sampleRate * 2, true); // ByteRate
-        view.setUint16(32, 2, true); // BlockAlign
-        view.setUint16(34, 16, true); // BitsPerSample
-        view.setUint32(36, 0x64617461, false); // "data"
-        view.setUint32(40, len, true); // Subchunk2Size
-
-        const wavBlob = new Blob([wavHeader, bytes], { type: "audio/wav" });
-        const audioUrl = URL.createObjectURL(wavBlob);
-        const audio = new Audio(audioUrl);
-        audio.onended = () => URL.revokeObjectURL(audioUrl);
-        await audio.play();
-      }
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "en-US";
+      utterance.voice =
+        window.speechSynthesis.getVoices().find(voice => voice.lang.toLowerCase().startsWith("en-us")) ??
+        window.speechSynthesis.getVoices().find(voice => voice.lang.toLowerCase().startsWith("en")) ??
+        null;
+      utterance.onend = () => setIsListening(false);
+      utterance.onerror = event => {
+        console.error("Speech synthesis error:", event.error);
+        setIsListening(false);
+      };
+      window.speechSynthesis.speak(utterance);
     } catch (error) {
-      console.error("TTS Error:", error);
-    } finally {
+      console.error("Speech synthesis error:", error);
       setIsListening(false);
     }
   };

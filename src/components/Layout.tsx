@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { LayoutDashboard, BookOpen, Layers, GraduationCap, LogOut, HelpCircle, Search, Bell, Settings, Menu, X, FolderTree, PenLine } from "lucide-react";
+import { LayoutDashboard, BookOpen, Layers, GraduationCap, LogOut, HelpCircle, Search, Bell, Settings, Menu, X, FolderTree, PenLine, ChevronLeft, ChevronRight } from "lucide-react";
 import { auth, googleProvider, signInWithPopup } from "../firebase";
 import { useFirebase } from "../hooks/useFirebase";
 
@@ -12,6 +12,22 @@ interface LayoutProps {
 export default function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
   const { user, loading } = useFirebase();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [desktopNavCollapsed, setDesktopNavCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem("lexis:desktop-nav-collapsed") === "true";
+    } catch (error) {
+      console.error("Sidebar preference restore error:", error);
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("lexis:desktop-nav-collapsed", String(desktopNavCollapsed));
+    } catch (error) {
+      console.error("Sidebar preference save error:", error);
+    }
+  }, [desktopNavCollapsed]);
 
   useEffect(() => {
     if (!mobileNavOpen) return;
@@ -160,35 +176,58 @@ export default function Layout({ children, activeTab, setActiveTab }: LayoutProp
       )}
 
       {/* Sidebar */}
-      <aside className="fixed left-0 top-0 h-screen w-64 bg-surface pt-20 p-4 hidden lg:flex flex-col border-r border-outline-variant/10">
+      <aside className={`fixed left-0 top-0 h-screen ${desktopNavCollapsed ? "w-20" : "w-64"} bg-surface pt-20 p-4 hidden lg:flex flex-col border-r border-outline-variant/10 transition-[width] duration-200`}>
+        <div className={`flex items-center mb-4 ${desktopNavCollapsed ? "justify-center" : "justify-end"}`}>
+          <button
+            type="button"
+            onClick={() => setDesktopNavCollapsed(collapsed => !collapsed)}
+            className="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-primary transition-colors"
+            aria-label={desktopNavCollapsed ? "Expand navigation menu" : "Collapse navigation menu"}
+            title={desktopNavCollapsed ? "Expand navigation menu" : "Collapse navigation menu"}
+            aria-expanded={!desktopNavCollapsed}
+          >
+            {desktopNavCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+          </button>
+        </div>
         <nav className="flex-1 space-y-1">
           {navItems.map((item) => (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm transition-all ${
+              title={desktopNavCollapsed ? item.label : undefined}
+              aria-label={item.label}
+              className={`w-full flex items-center ${desktopNavCollapsed ? "justify-center px-2" : "gap-3 px-4"} py-3 rounded-lg font-medium text-sm transition-all ${
                 activeTab === item.id 
                   ? "bg-primary-container text-primary shadow-sm" 
                   : "text-on-surface-variant hover:text-primary hover:translate-x-1"
               }`}
             >
-              <item.icon className="w-5 h-5" />
-              {item.label}
+              <item.icon className="w-5 h-5 shrink-0" />
+              {!desktopNavCollapsed && item.label}
             </button>
           ))}
         </nav>
         <div className="mt-auto pt-4 border-t border-outline-variant/10 space-y-2">
-          <button className="w-full flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:text-primary text-sm font-medium">
-            <HelpCircle className="w-5 h-5" /> Help
+          <button
+            title={desktopNavCollapsed ? "Help" : undefined}
+            aria-label="Help"
+            className={`w-full flex items-center ${desktopNavCollapsed ? "justify-center px-2" : "gap-3 px-4"} py-2 text-on-surface-variant hover:text-primary text-sm font-medium`}
+          >
+            <HelpCircle className="w-5 h-5 shrink-0" />{!desktopNavCollapsed && "Help"}
           </button>
-          <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:text-error text-sm font-medium">
-            <LogOut className="w-5 h-5" /> Logout
+          <button
+            onClick={handleLogout}
+            title={desktopNavCollapsed ? "Logout" : undefined}
+            aria-label="Logout"
+            className={`w-full flex items-center ${desktopNavCollapsed ? "justify-center px-2" : "gap-3 px-4"} py-2 text-on-surface-variant hover:text-error text-sm font-medium`}
+          >
+            <LogOut className="w-5 h-5 shrink-0" />{!desktopNavCollapsed && "Logout"}
           </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="lg:ml-64 pt-20 sm:pt-24 px-4 sm:px-6 pb-10 sm:pb-12 max-w-7xl mx-auto w-full">
+      <main className={`${desktopNavCollapsed ? "lg:ml-20" : "lg:ml-64"} pt-20 sm:pt-24 px-4 sm:px-6 pb-10 sm:pb-12 max-w-7xl mx-auto w-full transition-[margin] duration-200`}>
         {children}
       </main>
     </div>

@@ -3,6 +3,7 @@ import { Search, Edit, Trash2, X, Volume2, Loader2 } from "lucide-react";
 import { useFirebase } from "../hooks/useFirebase";
 import { db, deleteDoc, doc, collection, query, where, getDocs, updateDoc } from "../firebase";
 import { Vocabulary } from "../types";
+import { speakEnglish } from "../services/speechService";
 
 const PAGE_SIZE = 10;
 const WORD_LIST_FILTERS_STORAGE_KEY_PREFIX = "lexis:word-list-filters";
@@ -65,25 +66,12 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
 
   const handleListen = (text: string) => {
     if (isListening) return;
-    if (!("speechSynthesis" in window)) {
-      console.error("Speech synthesis is not supported in this browser.");
-      return;
-    }
-
     setIsListening(true);
     try {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = "en-US";
-      utterance.voice =
-        window.speechSynthesis.getVoices().find(voice => voice.lang.toLowerCase().startsWith("en-us")) ??
-        window.speechSynthesis.getVoices().find(voice => voice.lang.toLowerCase().startsWith("en")) ??
-        null;
-      utterance.onend = () => setIsListening(false);
-      utterance.onerror = event => {
-        console.error("Speech synthesis error:", event.error);
+      void speakEnglish(text, () => setIsListening(false)).catch(error => {
+        console.error("Speech synthesis error:", error);
         setIsListening(false);
-      };
-      window.speechSynthesis.speak(utterance);
+      });
     } catch (error) {
       console.error("Speech synthesis error:", error);
       setIsListening(false);

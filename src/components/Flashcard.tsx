@@ -4,6 +4,7 @@ import { db, updateDoc, doc } from "../firebase";
 import { useFirebase } from "../hooks/useFirebase";
 import { Vocabulary, UserProgress, SRSLevel } from "../types";
 import { calculateNextReview } from "../services/srsService";
+import { speakEnglish } from "../services/speechService";
 import { isBefore, format } from "date-fns";
 
 function getEnglishExample(example: string): string {
@@ -46,25 +47,12 @@ export default function Flashcard() {
 
   const handleListen = (text: string) => {
     if (isListening) return;
-    if (!("speechSynthesis" in window)) {
-      console.error("Speech synthesis is not supported in this browser.");
-      return;
-    }
-
     setIsListening(true);
     try {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = "en-US";
-      utterance.voice =
-        window.speechSynthesis.getVoices().find(voice => voice.lang.toLowerCase().startsWith("en-us")) ??
-        window.speechSynthesis.getVoices().find(voice => voice.lang.toLowerCase().startsWith("en")) ??
-        null;
-      utterance.onend = () => setIsListening(false);
-      utterance.onerror = event => {
-        console.error("Speech synthesis error:", event.error);
+      void speakEnglish(text, () => setIsListening(false)).catch(error => {
+        console.error("Speech synthesis error:", error);
         setIsListening(false);
-      };
-      window.speechSynthesis.speak(utterance);
+      });
     } catch (error) {
       console.error("Speech synthesis error:", error);
       setIsListening(false);
@@ -96,6 +84,13 @@ export default function Flashcard() {
   const currentProgress = progress.find(p => p.wordId === currentWord?.id);
 
   React.useEffect(() => {
+    setCurrentIndex(0);
+    setFlipped(false);
+    setSessionWordIds([]);
+    setSessionComplete(false);
+  }, [selectedTopicId]);
+
+  React.useEffect(() => {
     if (sessionWordIds.length === 0 && dueWords.length > 0) {
       setSessionWordIds(
         dueWords
@@ -104,13 +99,6 @@ export default function Flashcard() {
       );
     }
   }, [dueWords, sessionWordIds.length]);
-
-  React.useEffect(() => {
-    setCurrentIndex(0);
-    setFlipped(false);
-    setSessionWordIds([]);
-    setSessionComplete(false);
-  }, [selectedTopicId]);
 
   useEffect(() => {
     const updateCardHeight = () => {
@@ -152,18 +140,6 @@ export default function Flashcard() {
     }
   };
 
-  if (sessionComplete || sessionWords.length === 0) {
-    return (
-      <div className="h-[60vh] flex flex-col items-center justify-center text-center">
-        <div className="w-16 h-16 bg-primary-container rounded-full flex items-center justify-center text-primary mb-6">
-          <CheckCircle2 className="w-8 h-8" />
-        </div>
-        <h2 className="text-2xl font-headline font-bold text-on-background mb-2">All Caught Up!</h2>
-        <p className="text-on-surface-variant">No words due for review right now. Add more words to your sanctuary!</p>
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-2xl mx-auto flex flex-col items-center">
       <div className="w-full mb-6 sm:mb-8">
@@ -183,17 +159,30 @@ export default function Flashcard() {
             ))}
           </select>
         </div>
-        <div className="flex justify-between items-end mb-2">
-          <span className="text-xs font-bold text-primary tracking-widest uppercase">Session Progress</span>
-          <span className="text-xs text-on-surface-variant font-medium">{currentIndex + 1} / {sessionWords.length}</span>
-        </div>
-        <div className="w-full h-2 bg-surface-container-highest rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-primary transition-all duration-500" 
-            style={{ width: `${((currentIndex + 1) / sessionWords.length) * 100}%` }}
-          ></div>
-        </div>
       </div>
+
+      {sessionComplete || sessionWords.length === 0 ? (
+        <div className="h-[60vh] flex flex-col items-center justify-center text-center">
+          <div className="w-16 h-16 bg-primary-container rounded-full flex items-center justify-center text-primary mb-6">
+            <CheckCircle2 className="w-8 h-8" />
+          </div>
+          <h2 className="text-2xl font-headline font-bold text-on-background mb-2">All Caught Up!</h2>
+          <p className="text-on-surface-variant">No words due for review in this topic right now. Choose another topic to study.</p>
+        </div>
+      ) : (
+        <>
+          <div className="w-full mb-6 sm:mb-8">
+            <div className="flex justify-between items-end mb-2">
+              <span className="text-xs font-bold text-primary tracking-widest uppercase">Session Progress</span>
+              <span className="text-xs text-on-surface-variant font-medium">{currentIndex + 1} / {sessionWords.length}</span>
+            </div>
+            <div className="w-full h-2 bg-surface-container-highest rounded-full overflow-hidden">
+              <div
+                className="h-full bg-primary transition-all duration-500"
+                style={{ width: `${((currentIndex + 1) / sessionWords.length) * 100}%` }}
+              ></div>
+            </div>
+          </div>
 
       <div className="relative w-full">
         <div className="absolute inset-x-0 top-0 opacity-0 pointer-events-none -z-10">
@@ -313,6 +302,8 @@ export default function Flashcard() {
           <Loader2 className="w-4 h-4 animate-spin" />
           <span className="text-sm font-bold">Updating Progress...</span>
         </div>
+      )}
+        </>
       )}
     </div>
   );

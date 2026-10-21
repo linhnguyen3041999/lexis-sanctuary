@@ -20,7 +20,8 @@ Example: ${example || "unknown"}
 
 Rules:
 - If any field is missing or incorrect, provide corrected information.
-- The "word" field must preserve the user's complete word or phrase exactly, including every word, word order, grammatical form, and capitalization. Only correct clear spelling typos; never paraphrase, summarize, singularize, or otherwise rewrite it. For example, if the input is "Showed an upward trend", return exactly "Showed an upward trend".
+- Return the "word" field exactly as the user entered it, without any changes. This field is used only as a record of the original input.
+- If and only if the input contains a clear spelling typo, put a corrected version of the entire original phrase in "spellingSuggestion". Preserve all words, word order, grammar, and capitalization; change spelling only. Do not treat articles, prepositions, phrase fragments, or grammar as spelling mistakes. For example, for "the proportion of", return an empty "spellingSuggestion". The user must explicitly choose whether to apply this suggestion.
 - Put pronunciation in the "ipa" JSON field using standard IPA symbols, enclosed in slashes. Mark primary stress with ˈ and separate syllables with periods; for example, "renovate" should be /ˈren.ə.veɪt/. Do not use respelling such as "REN-o-vate".
 - Meaning must be concise and in Vietnamese.
 - Synonyms should be a concise comma-separated string of related English words or phrases.
@@ -34,6 +35,6 @@ Rules:
 - Level should be one of: A1, A2, B1, B2, C1, C2. If uncertain, use "unknown".
 - Choose exactly one topic from the available topics list based on the word's meaning and usage. Return the topic name exactly as listed. Never invent or create a topic. If the list is empty, return an empty string for topic.
 - Return ONLY valid JSON with these fields:
-  word, skillTags, type, level, ipa, synonyms, verbPattern, collocations, relatedForms, meaning, example, topic, isCorrect, suggestions.
+  word, spellingSuggestion, skillTags, type, level, ipa, synonyms, verbPattern, collocations, relatedForms, meaning, example, topic, isCorrect, suggestions.
 `;
 }

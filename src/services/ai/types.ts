@@ -17,6 +17,7 @@ export interface VocabInput {
 
 export interface VocabValidationResult {
   word: string;
+  spellingSuggestion: string;
   skillTags: SkillTag[];
   type: string;
   level: string;

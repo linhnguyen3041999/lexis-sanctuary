@@ -20,6 +20,7 @@ export function parseValidationResult(rawText: string): VocabValidationResult {
 
   return {
     word: parsed.word || "",
+    spellingSuggestion: typeof parsed.spellingSuggestion === "string" ? parsed.spellingSuggestion.trim() : "",
     skillTags,
     type: parsed.type || "noun",
     level: parsed.level || "",

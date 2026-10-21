@@ -7,87 +7,6 @@ import { validateAndCompleteVocab } from "../services/aiService";
 
 const AI_SELECT_TOPIC = "__ai_select_existing__";
 
-function isSingleCharacterSpellingCorrection(original: string, corrected: string): boolean {
-  if (original.toLocaleLowerCase() === corrected.toLocaleLowerCase()) return true;
-  if (Math.abs(original.length - corrected.length) > 1) return false;
-
-  let originalIndex = 0;
-  let correctedIndex = 0;
-  let differences = 0;
-
-  while (originalIndex < original.length && correctedIndex < corrected.length) {
-    if (original[originalIndex].toLocaleLowerCase() === corrected[correctedIndex].toLocaleLowerCase()) {
-      originalIndex++;
-      correctedIndex++;
-      continue;
-    }
-
-    differences++;
-    if (differences > 1) return false;
-
-    if (
-      originalIndex + 1 < original.length &&
-      correctedIndex + 1 < corrected.length &&
-      original[originalIndex].toLocaleLowerCase() === corrected[correctedIndex + 1].toLocaleLowerCase() &&
-      original[originalIndex + 1].toLocaleLowerCase() === corrected[correctedIndex].toLocaleLowerCase()
-    ) {
-      originalIndex += 2;
-      correctedIndex += 2;
-    } else if (original.length > corrected.length) {
-      originalIndex++;
-    } else if (corrected.length > original.length) {
-      correctedIndex++;
-    } else {
-      originalIndex++;
-      correctedIndex++;
-    }
-  }
-
-  return differences + (originalIndex < original.length || correctedIndex < corrected.length ? 1 : 0) <= 1;
-}
-
-function applySpellingCorrections(original: string, candidate: string): string {
-  const originalParts = original.match(/[\p{L}]+|[^\p{L}]+/gu) || [];
-  const candidateParts = candidate.match(/[\p{L}]+|[^\p{L}]+/gu) || [];
-  if (originalParts.length !== candidateParts.length) return original;
-
-  const correctedParts: string[] = [];
-  let hasCorrection = false;
-
-  for (let index = 0; index < originalParts.length; index++) {
-    const originalPart = originalParts[index];
-    const candidatePart = candidateParts[index];
-    const isWord = /^\p{L}+$/u.test(originalPart);
-
-    if (!isWord) {
-      if (originalPart !== candidatePart) return original;
-      correctedParts.push(originalPart);
-      continue;
-    }
-
-    if (!isSingleCharacterSpellingCorrection(originalPart, candidatePart)) return original;
-    if (originalPart.toLocaleLowerCase() === candidatePart.toLocaleLowerCase()) {
-      correctedParts.push(originalPart);
-      continue;
-    }
-
-    hasCorrection = true;
-    if (originalPart === originalPart.toLocaleUpperCase()) {
-      correctedParts.push(candidatePart.toLocaleUpperCase());
-    } else if (originalPart[0] === originalPart[0].toLocaleUpperCase()) {
-      correctedParts.push(capitalizeToken(candidatePart));
-    } else {
-      correctedParts.push(candidatePart.toLocaleLowerCase());
-    }
-  }
-
-  return hasCorrection ? correctedParts.join("") : original;
-}
-
-function capitalizeToken(value: string): string {
-  return value.charAt(0).toLocaleUpperCase() + value.slice(1).toLocaleLowerCase();
-}
-
 interface VocabFormProps {
   editingWord?: Vocabulary | null;
   onCancel?: () => void;
@@ -200,20 +119,19 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
       if (matchedTopic?.id) {
         setSelectedTopicId(matchedTopic.id);
       }
-      setFormData({
-        ...formData,
-        word: applySpellingCorrections(formData.word, result.word || formData.word),
-        skillTags: result.skillTags.length > 0 ? result.skillTags : formData.skillTags,
+      setFormData(current => ({
+        ...current,
+        skillTags: result.skillTags.length > 0 ? result.skillTags : current.skillTags,
         type: result.type || "noun",
         level: normalizeLevel(result.level || ""),
         ipa: capitalizeFirstLetter(result.ipa || ""),
-        synonyms: capitalizeFirstLetter(result.synonyms || formData.synonyms),
-        verbPattern: result.verbPattern || formData.verbPattern,
-        collocations: result.collocations || formData.collocations,
-        relatedForms: result.relatedForms || formData.relatedForms,
+        synonyms: capitalizeFirstLetter(result.synonyms || current.synonyms),
+        verbPattern: result.verbPattern || current.verbPattern,
+        collocations: result.collocations || current.collocations,
+        relatedForms: result.relatedForms || current.relatedForms,
         meaning: capitalizeFirstLetter(result.meaning || ""),
         example: capitalizeFirstLetter(result.example || ""),
-      });
+      }));
     } catch (error) {
       console.error("AI Error:", error);
     } finally {
@@ -310,9 +228,30 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                   className="w-full bg-surface-container-low border border-outline-variant/40 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20"
                   placeholder="e.g., Luminous"
                   value={formData.word}
-                  onChange={e => setFormData({ ...formData, word: capitalizeFirstLetter(e.target.value) })}
+                  onChange={e => {
+                    setFormData(current => ({ ...current, word: e.target.value }));
+                    setAiFeedback(null);
+                  }}
                   required
                 />
+                {aiFeedback?.spellingSuggestion &&
+                  aiFeedback.spellingSuggestion.trim().toLocaleLowerCase() !== formData.word.trim().toLocaleLowerCase() && (
+                    <div className="rounded-lg bg-primary-container/50 p-3 text-sm">
+                      <p className="text-on-surface-variant">
+                        AI spelling suggestion: <span className="font-semibold text-on-surface">{aiFeedback.spellingSuggestion}</span>
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData(current => ({ ...current, word: aiFeedback.spellingSuggestion }));
+                          setAiFeedback((current: typeof aiFeedback) => ({ ...current, spellingSuggestion: "" }));
+                        }}
+                        className="mt-2 font-semibold text-primary hover:underline"
+                      >
+                        Apply spelling suggestion
+                      </button>
+                    </div>
+                  )}
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-on-surface-variant ml-1">Word Type</label>

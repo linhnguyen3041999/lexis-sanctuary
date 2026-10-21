@@ -16,7 +16,11 @@ export async function validateWithGemini(formData: VocabInput): Promise<VocabVal
         properties: {
           word: {
             type: Type.STRING,
-            description: "Preserve the complete input word or phrase exactly; only correct clear spelling typos. Never paraphrase, shorten, or change grammatical form.",
+            description: "Exact original word or phrase as entered. Do not modify.",
+          },
+          spellingSuggestion: {
+            type: Type.STRING,
+            description: "An optional corrected full phrase only when there is a clear spelling typo; otherwise an empty string. Do not alter phrase structure, grammar, or capitalization.",
           },
           skillTags: {
             type: Type.ARRAY,
@@ -39,7 +43,7 @@ export async function validateWithGemini(formData: VocabInput): Promise<VocabVal
           isCorrect: { type: Type.BOOLEAN, description: "Whether the original input was mostly correct" },
           suggestions: { type: Type.STRING, description: "Brief explanation of changes made" }
         },
-        required: ["word", "skillTags", "type", "level", "ipa", "synonyms", "verbPattern", "collocations", "relatedForms", "meaning", "example", "topic", "isCorrect", "suggestions"]
+        required: ["word", "spellingSuggestion", "skillTags", "type", "level", "ipa", "synonyms", "verbPattern", "collocations", "relatedForms", "meaning", "example", "topic", "isCorrect", "suggestions"]
       }
     },
   });

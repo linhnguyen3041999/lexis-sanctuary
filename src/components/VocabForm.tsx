@@ -243,7 +243,10 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                       <button
                         type="button"
                         onClick={() => {
-                          setFormData(current => ({ ...current, word: aiFeedback.spellingSuggestion }));
+                          setFormData(current => ({
+                            ...current,
+                            word: capitalizeFirstLetter(aiFeedback.spellingSuggestion),
+                          }));
                           setAiFeedback((current: typeof aiFeedback) => ({ ...current, spellingSuggestion: "" }));
                         }}
                         className="mt-2 font-semibold text-primary hover:underline"

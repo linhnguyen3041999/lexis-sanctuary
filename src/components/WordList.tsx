@@ -234,11 +234,11 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
   };
 
   const filteredVocab = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase();
+    const normalizedSearch = search.trim().toLocaleLowerCase();
 
     return vocabulary
       .filter(v => {
-        const matchesSearch = !normalizedSearch || v.word.toLowerCase().startsWith(normalizedSearch);
+        const matchesSearch = !normalizedSearch || v.word.toLocaleLowerCase().includes(normalizedSearch);
         const matchesType = !filterType || v.type === filterType;
         const matchesLevel = !filterLevel || (v.level || "").toUpperCase() === filterLevel;
         const matchesTopic = !filterTopicId || v.topicId === filterTopicId;

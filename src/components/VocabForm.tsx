@@ -229,7 +229,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                   placeholder="e.g., Luminous"
                   value={formData.word}
                   onChange={e => {
-                    setFormData(current => ({ ...current, word: e.target.value }));
+                    setFormData(current => ({ ...current, word: capitalizeFirstLetter(e.target.value) }));
                     setAiFeedback(null);
                   }}
                   required

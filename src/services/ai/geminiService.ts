@@ -14,7 +14,10 @@ export async function validateWithGemini(formData: VocabInput): Promise<VocabVal
       responseSchema: {
         type: Type.OBJECT,
         properties: {
-          word: { type: Type.STRING },
+          word: {
+            type: Type.STRING,
+            description: "Preserve the complete input word or phrase exactly; only correct clear spelling typos. Never paraphrase, shorten, or change grammatical form.",
+          },
           skillTags: {
             type: Type.ARRAY,
             items: { type: Type.STRING, format: "enum", enum: ["speaking", "writing"] },

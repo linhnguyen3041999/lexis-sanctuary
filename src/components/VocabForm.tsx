@@ -7,6 +7,87 @@ import { validateAndCompleteVocab } from "../services/aiService";
 
 const AI_SELECT_TOPIC = "__ai_select_existing__";
 
+function isSingleCharacterSpellingCorrection(original: string, corrected: string): boolean {
+  if (original.toLocaleLowerCase() === corrected.toLocaleLowerCase()) return true;
+  if (Math.abs(original.length - corrected.length) > 1) return false;
+
+  let originalIndex = 0;
+  let correctedIndex = 0;
+  let differences = 0;
+
+  while (originalIndex < original.length && correctedIndex < corrected.length) {
+    if (original[originalIndex].toLocaleLowerCase() === corrected[correctedIndex].toLocaleLowerCase()) {
+      originalIndex++;
+      correctedIndex++;
+      continue;
+    }
+
+    differences++;
+    if (differences > 1) return false;
+
+    if (
+      originalIndex + 1 < original.length &&
+      correctedIndex + 1 < corrected.length &&
+      original[originalIndex].toLocaleLowerCase() === corrected[correctedIndex + 1].toLocaleLowerCase() &&
+      original[originalIndex + 1].toLocaleLowerCase() === corrected[correctedIndex].toLocaleLowerCase()
+    ) {
+      originalIndex += 2;
+      correctedIndex += 2;
+    } else if (original.length > corrected.length) {
+      originalIndex++;
+    } else if (corrected.length > original.length) {
+      correctedIndex++;
+    } else {
+      originalIndex++;
+      correctedIndex++;
+    }
+  }
+
+  return differences + (originalIndex < original.length || correctedIndex < corrected.length ? 1 : 0) <= 1;
+}
+
+function applySpellingCorrections(original: string, candidate: string): string {
+  const originalParts = original.match(/[\p{L}]+|[^\p{L}]+/gu) || [];
+  const candidateParts = candidate.match(/[\p{L}]+|[^\p{L}]+/gu) || [];
+  if (originalParts.length !== candidateParts.length) return original;
+
+  const correctedParts: string[] = [];
+  let hasCorrection = false;
+
+  for (let index = 0; index < originalParts.length; index++) {
+    const originalPart = originalParts[index];
+    const candidatePart = candidateParts[index];
+    const isWord = /^\p{L}+$/u.test(originalPart);
+
+    if (!isWord) {
+      if (originalPart !== candidatePart) return original;
+      correctedParts.push(originalPart);
+      continue;
+    }
+
+    if (!isSingleCharacterSpellingCorrection(originalPart, candidatePart)) return original;
+    if (originalPart.toLocaleLowerCase() === candidatePart.toLocaleLowerCase()) {
+      correctedParts.push(originalPart);
+      continue;
+    }
+
+    hasCorrection = true;
+    if (originalPart === originalPart.toLocaleUpperCase()) {
+      correctedParts.push(candidatePart.toLocaleUpperCase());
+    } else if (originalPart[0] === originalPart[0].toLocaleUpperCase()) {
+      correctedParts.push(capitalizeToken(candidatePart));
+    } else {
+      correctedParts.push(candidatePart.toLocaleLowerCase());
+    }
+  }
+
+  return hasCorrection ? correctedParts.join("") : original;
+}
+
+function capitalizeToken(value: string): string {
+  return value.charAt(0).toLocaleUpperCase() + value.slice(1).toLocaleLowerCase();
+}
+
 interface VocabFormProps {
   editingWord?: Vocabulary | null;
   onCancel?: () => void;
@@ -121,7 +202,7 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
       }
       setFormData({
         ...formData,
-        word: capitalizeFirstLetter(result.word || ""),
+        word: applySpellingCorrections(formData.word, result.word || formData.word),
         skillTags: result.skillTags.length > 0 ? result.skillTags : formData.skillTags,
         type: result.type || "noun",
         level: normalizeLevel(result.level || ""),

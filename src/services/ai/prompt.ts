@@ -20,6 +20,7 @@ Example: ${example || "unknown"}
 
 Rules:
 - If any field is missing or incorrect, provide corrected information.
+- The "word" field must preserve the user's complete word or phrase exactly, including every word, word order, grammatical form, and capitalization. Only correct clear spelling typos; never paraphrase, summarize, singularize, or otherwise rewrite it. For example, if the input is "Showed an upward trend", return exactly "Showed an upward trend".
 - Put pronunciation in the "ipa" JSON field using standard IPA symbols, enclosed in slashes. Mark primary stress with ˈ and separate syllables with periods; for example, "renovate" should be /ˈren.ə.veɪt/. Do not use respelling such as "REN-o-vate".
 - Meaning must be concise and in Vietnamese.
 - Synonyms should be a concise comma-separated string of related English words or phrases.

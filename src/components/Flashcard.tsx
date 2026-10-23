@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { Volume2, Edit, Star, FlipHorizontal, CheckCircle2, Loader2, Sparkles } from "lucide-react";
+import { Volume2, Edit, Star, FlipHorizontal, CheckCircle2, Loader2, Sparkles, Info, X } from "lucide-react";
 import { db, updateDoc, doc } from "../firebase";
 import { useFirebase } from "../hooks/useFirebase";
 import { Vocabulary, UserProgress, SRSLevel } from "../types";
@@ -42,6 +42,7 @@ export default function Flashcard() {
   const [cardHeight, setCardHeight] = useState(0);
   const [sessionWordIds, setSessionWordIds] = useState<string[]>([]);
   const [sessionComplete, setSessionComplete] = useState(false);
+  const [showWordDetails, setShowWordDetails] = useState(false);
   const frontMeasureRef = useRef<HTMLDivElement | null>(null);
   const backMeasureRef = useRef<HTMLDivElement | null>(null);
 
@@ -125,6 +126,7 @@ export default function Flashcard() {
       const updates = calculateNextReview(currentProgress, level);
       await updateDoc(doc(db, "progress", currentProgress.id!), updates);
       
+      setShowWordDetails(false);
       setFlipped(false);
       if (currentIndex < sessionWords.length - 1) {
         setCurrentIndex(currentIndex + 1);
@@ -266,12 +268,113 @@ export default function Flashcard() {
                       Listen example
                     </button>
                   )}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowWordDetails(true);
+                    }}
+                    className="mx-auto flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/20"
+                  >
+                    <Info className="w-4 h-4" />
+                    Detail
+                  </button>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {showWordDetails && currentWord && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={() => setShowWordDetails(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="flashcard-word-details-title"
+            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-outline-variant/10 bg-surface-container-lowest p-5 shadow-2xl sm:p-8"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="mb-6 flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <h2 id="flashcard-word-details-title" className="break-words text-2xl font-headline font-bold text-on-background sm:text-3xl">
+                  {currentWord.word}
+                </h2>
+                <p className="mt-1 break-all font-mono text-sm text-on-surface-variant">{currentWord.ipa || "No pronunciation provided"}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowWordDetails(false)}
+                aria-label="Close word details"
+                className="shrink-0 rounded-full bg-surface-container-high p-2 text-on-surface-variant transition-colors hover:text-primary"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <div className="space-y-5">
+                <section>
+                  <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-on-surface-variant">Meaning</h3>
+                  <p className="whitespace-pre-wrap break-words leading-relaxed text-on-background">{currentWord.meaning || "Unspecified"}</p>
+                </section>
+                <section>
+                  <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-on-surface-variant">Type</h3>
+                  <p className="capitalize text-on-background">{currentWord.type || "Unspecified"}</p>
+                </section>
+                <section>
+                  <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-on-surface-variant">Skill Context</h3>
+                  {currentWord.skillTags?.length ? (
+                    <div className="flex flex-wrap gap-2">
+                      {currentWord.skillTags.map(tag => (
+                        <span key={tag} className="rounded-full bg-surface-container-high px-3 py-1 text-sm font-medium capitalize text-on-surface-variant">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  ) : <p className="text-on-surface-variant">Unspecified</p>}
+                </section>
+                <section>
+                  <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-on-surface-variant">Level</h3>
+                  <p className="text-on-background">{currentWord.level ? currentWord.level.toUpperCase() : "Unspecified"}</p>
+                </section>
+                <section>
+                  <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-on-surface-variant">Topic</h3>
+                  <p className="text-on-background">{topics.find(topic => topic.id === currentWord.topicId)?.name || "Unclassified"}</p>
+                </section>
+                <section>
+                  <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-on-surface-variant">Synonyms</h3>
+                  <p className="whitespace-pre-wrap break-words text-on-background">{currentWord.synonyms || "Unspecified"}</p>
+                </section>
+              </div>
+
+              <div className="space-y-5">
+                <section>
+                  <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-on-surface-variant">Verb Pattern / Usage Formula</h3>
+                  <p className="whitespace-pre-wrap break-words text-on-background">{currentWord.verbPattern || "Not applicable"}</p>
+                </section>
+                <section>
+                  <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-on-surface-variant">Collocations</h3>
+                  <p className="whitespace-pre-wrap break-words text-on-background">{currentWord.collocations || "Unspecified"}</p>
+                </section>
+                <section>
+                  <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-on-surface-variant">Related Forms</h3>
+                  <p className="whitespace-pre-wrap break-words text-on-background">{currentWord.relatedForms || "Unspecified"}</p>
+                </section>
+                <section>
+                  <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-on-surface-variant">Example Sentence</h3>
+                  <div className="rounded-2xl border border-outline-variant/5 bg-surface-container-low p-4">
+                    <p className="whitespace-pre-wrap break-words leading-relaxed text-on-background">{currentWord.example || "No example provided"}</p>
+                  </div>
+                </section>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {flipped && (
         <div className="w-full mt-8 sm:mt-12 space-y-6 sm:space-y-8">

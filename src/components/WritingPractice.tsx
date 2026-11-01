@@ -17,15 +17,17 @@ function normalizeAnswer(answer: string): string {
 }
 
 export default function WritingPractice() {
-  const { vocabulary, topics } = useFirebase();
+  const { vocabulary, topics, progress } = useFirebase();
   const [selectedTopicId, setSelectedTopicId] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
   const words = useMemo(
     () => shuffleWords(vocabulary.filter(word =>
       word.meaning.trim() &&
       word.word.trim() &&
-      (!selectedTopicId || word.topicId === selectedTopicId)
+      (!selectedTopicId || word.topicId === selectedTopicId) &&
+      (!selectedStatus || (progress.find(item => item.wordId === word.id)?.status || "new") === selectedStatus)
     )),
-    [vocabulary, selectedTopicId]
+    [vocabulary, selectedTopicId, selectedStatus, progress]
   );
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answer, setAnswer] = useState("");
@@ -52,25 +54,43 @@ export default function WritingPractice() {
 
   const topicSelector = (
     <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-      <label htmlFor="writing-topic" className="text-xs font-bold text-primary tracking-widest uppercase">
-        Study Topic
-      </label>
-      <select
-        id="writing-topic"
-        value={selectedTopicId}
-        onChange={event => {
-          setSelectedTopicId(event.target.value);
-          setCurrentIndex(0);
-          setAnswer("");
-          setChecked(false);
-        }}
-        className="w-full sm:w-auto min-w-56 bg-surface-container-low border border-outline-variant/30 rounded-lg px-4 py-2.5 text-sm font-medium text-on-surface focus:ring-2 focus:ring-primary/20"
-      >
-        <option value="">All topics</option>
-        {topics.map(topic => (
-          <option key={topic.id} value={topic.id}>{topic.name}</option>
-        ))}
-      </select>
+      <span className="text-xs font-bold text-primary tracking-widest uppercase">Filter Practice</span>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <label className="sr-only" htmlFor="writing-topic">Study Topic</label>
+        <select
+          id="writing-topic"
+          value={selectedTopicId}
+          onChange={event => {
+            setSelectedTopicId(event.target.value);
+            setCurrentIndex(0);
+            setAnswer("");
+            setChecked(false);
+          }}
+          className="w-full sm:min-w-48 bg-surface-container-low border border-outline-variant/30 rounded-lg px-4 py-2.5 text-sm font-medium text-on-surface focus:ring-2 focus:ring-primary/20"
+        >
+          <option value="">All topics</option>
+          {topics.map(topic => (
+            <option key={topic.id} value={topic.id}>{topic.name}</option>
+          ))}
+        </select>
+        <label className="sr-only" htmlFor="writing-status">Study Status</label>
+        <select
+          id="writing-status"
+          value={selectedStatus}
+          onChange={event => {
+            setSelectedStatus(event.target.value);
+            setCurrentIndex(0);
+            setAnswer("");
+            setChecked(false);
+          }}
+          className="w-full sm:min-w-40 bg-surface-container-low border border-outline-variant/30 rounded-lg px-4 py-2.5 text-sm font-medium text-on-surface focus:ring-2 focus:ring-primary/20"
+        >
+          <option value="">All statuses</option>
+          <option value="new">New</option>
+          <option value="learning">Learning</option>
+          <option value="mastered">Mastered</option>
+        </select>
+      </div>
     </div>
   );
 

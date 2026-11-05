@@ -33,7 +33,7 @@ export interface UserProgress {
   repetition: number;
   easeFactor: number;
   nextReview: any;
-  status: "new" | "learning" | "mastered";
+  status: "new" | "learning" | "good" | "mastered";
 }
 
 export type SRSLevel = "again" | "hard" | "good" | "easy";

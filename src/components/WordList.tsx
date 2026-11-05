@@ -218,7 +218,7 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
 
   const levelOptions = useMemo(() => ["A1", "A2", "B1", "B2", "C1", "C2"], []);
 
-  const statusOptions = useMemo(() => ["new", "learning", "mastered"], []);
+  const statusOptions = useMemo(() => ["new", "learning", "good", "mastered"], []);
 
   const getStatus = (word: Vocabulary) => {
     return progress.find(pr => pr.wordId === word.id)?.status || "new";

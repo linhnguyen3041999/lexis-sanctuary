@@ -1,35 +1,41 @@
-import { addDays } from "date-fns";
+import { addDays, addMinutes } from "date-fns";
 import { UserProgress, SRSLevel } from "../types";
 
 export function calculateNextReview(progress: UserProgress, level: SRSLevel): Partial<UserProgress> {
-  let { interval, repetition, easeFactor } = progress;
+  let { repetition, easeFactor } = progress;
+  const now = new Date();
+  let interval: number;
+  let nextReview: Date;
+  let status: UserProgress["status"];
 
-  if (level === "again") {
-    interval = 0;
-    repetition = 0;
-    // Keep easeFactor or reset? SM-2 usually keeps it but resets repetition
-  } else {
-    if (repetition === 0) {
-      interval = 1;
-    } else if (repetition === 1) {
-      interval = 6;
-    } else {
-      interval = Math.round(interval * easeFactor);
-    }
-
-    repetition += 1;
-
-    if (level === "hard") {
+  switch (level) {
+    case "again":
+      interval = 0;
+      nextReview = addMinutes(now, 1);
+      repetition = 0;
+      status = "new";
+      break;
+    case "hard":
+      interval = 2;
+      nextReview = addDays(now, interval);
+      repetition += 1;
       easeFactor = Math.max(1.3, easeFactor - 0.15);
-      interval = Math.max(1, Math.round(interval * 0.8)); // Hard is slower
-    } else if (level === "easy") {
-      easeFactor = easeFactor + 0.15;
-      interval = Math.round(interval * 1.3); // Easy is faster
-    }
+      status = "learning";
+      break;
+    case "good":
+      interval = 4;
+      nextReview = addDays(now, interval);
+      repetition += 1;
+      status = "good";
+      break;
+    case "easy":
+      interval = 7;
+      nextReview = addDays(now, interval);
+      repetition += 1;
+      easeFactor += 0.15;
+      status = "mastered";
+      break;
   }
-
-  const nextReview = addDays(new Date(), interval);
-  const status = interval > 21 ? "mastered" : "learning";
 
   return {
     interval,

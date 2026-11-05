@@ -44,7 +44,7 @@
         "repetition": { "type": "number", "description": "Number of successful repetitions." },
         "easeFactor": { "type": "number", "description": "Ease factor for SM-2 algorithm." },
         "nextReview": { "type": "string", "format": "date-time", "description": "Next scheduled review date." },
-        "status": { "type": "string", "enum": ["new", "learning", "mastered"] }
+        "status": { "type": "string", "enum": ["new", "learning", "good", "mastered"] }
       },
       "required": ["wordId", "userId", "interval", "repetition", "easeFactor", "nextReview", "status"]
     }

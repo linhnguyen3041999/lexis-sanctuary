@@ -88,6 +88,7 @@ export default function WritingPractice() {
           <option value="">All statuses</option>
           <option value="new">New</option>
           <option value="learning">Learning</option>
+          <option value="good">Good</option>
           <option value="mastered">Mastered</option>
         </select>
       </div>

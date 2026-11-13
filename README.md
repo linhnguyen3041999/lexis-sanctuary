@@ -57,7 +57,7 @@ npm install
 Create a `.env` file in the root directory (you can use `.env.example` as a template):
 ```env
 GEMINI_API_KEY=your_gemini_api_key
-APP_URL=http://localhost:3000
+APP_URL=http://localhost:6001
 ```
 *Note: You can get a Gemini API key from [Google AI Studio](https://aistudio.google.com/).*
 
@@ -68,7 +68,7 @@ To start the development server with hot reloading:
 ```bash
 npm run dev
 ```
-The app will be available at `http://localhost:3000`.
+The app will be available at `http://localhost:6001`.
 
 #### Production Mode
 To build the app for production and start the server:

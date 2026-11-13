@@ -1,7 +1,9 @@
 import { FormEvent, useMemo, useState } from "react";
-import { Check, PenLine, RotateCw } from "lucide-react";
+import { Check, Info, PenLine, RotateCw, X } from "lucide-react";
+import { db, doc, updateDoc } from "../firebase";
 import { useFirebase } from "../hooks/useFirebase";
-import { Vocabulary } from "../types";
+import { SRSLevel, Vocabulary } from "../types";
+import { calculateNextReview } from "../services/srsService";
 
 function shuffleWords(words: Vocabulary[]): Vocabulary[] {
   const shuffled = [...words];
@@ -32,9 +34,12 @@ export default function WritingPractice() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answer, setAnswer] = useState("");
   const [checked, setChecked] = useState(false);
+  const [showWordDetails, setShowWordDetails] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState<SRSLevel | null>(null);
   const displayIndex = words.length > 0 ? currentIndex % words.length : 0;
   const currentWord = words[displayIndex];
   const isCorrect = currentWord ? normalizeAnswer(answer) === normalizeAnswer(currentWord.word) : false;
+  const currentProgress = progress.find(item => item.wordId === currentWord?.id);
 
   const handleCheck = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -50,6 +55,23 @@ export default function WritingPractice() {
     setCurrentIndex(displayIndex + 1);
     setAnswer("");
     setChecked(false);
+    setShowWordDetails(false);
+    setUpdatingStatus(null);
+  };
+
+  const handleReview = async (level: SRSLevel) => {
+    if (!currentProgress?.id || updatingStatus) return;
+
+    setUpdatingStatus(level);
+    try {
+      const updates = calculateNextReview(currentProgress, level);
+      await updateDoc(doc(db, "progress", currentProgress.id), updates);
+      handleNext();
+    } catch (error) {
+      console.error("Writing Practice review error:", error);
+    } finally {
+      setUpdatingStatus(null);
+    }
   };
 
   const topicSelector = (
@@ -159,18 +181,145 @@ export default function WritingPractice() {
       </form>
 
       {checked && (
-        <p
-          role="status"
-          className={`mt-5 text-sm font-semibold ${isCorrect ? "text-green-700" : "text-error"}`}
-        >
-          {isCorrect ? "Chính xác!" : `Chưa chính xác. Đáp án: ${currentWord.word}`}
-        </p>
+        <div className="mt-5 space-y-4">
+          <p
+            role="status"
+            className={`text-sm font-semibold ${isCorrect ? "text-green-700" : "text-error"}`}
+          >
+            {isCorrect ? "Chính xác!" : `Chưa chính xác. Đáp án: ${currentWord.word}`}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowWordDetails(true)}
+              className="ml-auto flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/20"
+            >
+              <Info className="h-4 w-4" />
+              Detail
+            </button>
+          </div>
+        </div>
       )}
 
       <p className="mt-8 text-xs text-on-surface-variant">
         Từ {displayIndex + 1} / {words.length}
       </p>
       </section>
+
+      {checked && (
+        <div className="mt-8 w-full rounded-full bg-surface-container-low p-2 shadow-sm">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:justify-between">
+            {([
+              { id: "again", label: "Again", time: "< 1m", color: "text-error" },
+              { id: "hard", label: "Hard", time: "2d", color: "text-secondary" },
+              { id: "good", label: "Good", time: "4d", color: "text-primary" },
+              { id: "easy", label: "Easy", time: "7d", color: "text-blue-400" },
+            ] as const).map(level => (
+              <button
+                key={level.id}
+                type="button"
+                disabled={!currentProgress?.id || updatingStatus !== null}
+                onClick={() => handleReview(level.id)}
+                className="group flex flex-col items-center rounded-xl px-4 py-3 transition-all hover:bg-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-1 sm:rounded-full"
+              >
+                <span className="mb-1 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+                  {level.label}
+                </span>
+                <span className={`text-lg font-headline font-extrabold ${level.color}`}>
+                  {updatingStatus === level.id ? "..." : level.time}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {showWordDetails && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={() => setShowWordDetails(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="writing-word-details-title"
+            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-outline-variant/10 bg-surface-container-lowest p-5 shadow-2xl sm:p-8"
+            onClick={event => event.stopPropagation()}
+          >
+            <div className="mb-6 flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <h2 id="writing-word-details-title" className="break-words text-2xl font-headline font-bold text-on-background sm:text-3xl">
+                  {currentWord.word}
+                </h2>
+                <p className="mt-1 break-all font-mono text-sm text-on-surface-variant">
+                  {currentWord.ipa || "No pronunciation provided"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowWordDetails(false)}
+                aria-label="Close word details"
+                className="shrink-0 rounded-full bg-surface-container-high p-2 text-on-surface-variant transition-colors hover:text-primary"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <div className="space-y-5">
+                <section>
+                  <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-on-surface-variant">Meaning</h3>
+                  <p className="whitespace-pre-wrap break-words leading-relaxed text-on-background">{currentWord.meaning || "Unspecified"}</p>
+                </section>
+                <section>
+                  <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-on-surface-variant">Type</h3>
+                  <p className="capitalize text-on-background">{currentWord.type || "Unspecified"}</p>
+                </section>
+                <section>
+                  <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-on-surface-variant">Skill Context</h3>
+                  {currentWord.skillTags?.length ? (
+                    <div className="flex flex-wrap gap-2">
+                      {currentWord.skillTags.map(tag => (
+                        <span key={tag} className="rounded-full bg-surface-container-high px-3 py-1 text-sm font-medium capitalize text-on-surface-variant">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  ) : <p className="text-on-surface-variant">Unspecified</p>}
+                </section>
+                <section>
+                  <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-on-surface-variant">Level</h3>
+                  <p className="text-on-background">{currentWord.level ? currentWord.level.toUpperCase() : "Unspecified"}</p>
+                </section>
+                <section>
+                  <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-on-surface-variant">Synonyms</h3>
+                  <p className="whitespace-pre-wrap break-words text-on-background">{currentWord.synonyms || "Unspecified"}</p>
+                </section>
+              </div>
+              <div className="space-y-5">
+                <section>
+                  <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-on-surface-variant">Verb Pattern / Usage Formula</h3>
+                  <p className="whitespace-pre-wrap break-words text-on-background">{currentWord.verbPattern || "Not applicable"}</p>
+                </section>
+                <section>
+                  <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-on-surface-variant">Collocations</h3>
+                  <p className="whitespace-pre-wrap break-words text-on-background">{currentWord.collocations || "Unspecified"}</p>
+                </section>
+                <section>
+                  <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-on-surface-variant">Related Forms</h3>
+                  <p className="whitespace-pre-wrap break-words text-on-background">{currentWord.relatedForms || "Unspecified"}</p>
+                </section>
+                <section>
+                  <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-on-surface-variant">Example Sentence</h3>
+                  <div className="rounded-2xl border border-outline-variant/5 bg-surface-container-low p-4">
+                    <p className="whitespace-pre-wrap break-words leading-relaxed text-on-background">{currentWord.example || "No example provided"}</p>
+                  </div>
+                </section>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

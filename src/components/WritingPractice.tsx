@@ -2,7 +2,7 @@ import { FormEvent, useMemo, useState } from "react";
 import { Check, Info, PenLine, RotateCw, X } from "lucide-react";
 import { db, doc, updateDoc } from "../firebase";
 import { useFirebase } from "../hooks/useFirebase";
-import { SRSLevel, Vocabulary } from "../types";
+import { SRSLevel, UserProgress, Vocabulary } from "../types";
 import { calculateNextReview } from "../services/srsService";
 
 function shuffleWords(words: Vocabulary[]): Vocabulary[] {
@@ -22,14 +22,23 @@ export default function WritingPractice() {
   const { vocabulary, topics, progress } = useFirebase();
   const [selectedTopicId, setSelectedTopicId] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
+  const [sessionStatusOverrides, setSessionStatusOverrides] = useState<Record<string, UserProgress["status"]>>({});
+  const shuffledWords = useMemo(
+    () => shuffleWords(vocabulary),
+    [vocabulary]
+  );
   const words = useMemo(
-    () => shuffleWords(vocabulary.filter(word =>
+    () => shuffledWords.filter(word =>
       word.meaning.trim() &&
       word.word.trim() &&
       (!selectedTopicId || word.topicId === selectedTopicId) &&
-      (!selectedStatus || (progress.find(item => item.wordId === word.id)?.status || "new") === selectedStatus)
-    )),
-    [vocabulary, selectedTopicId, selectedStatus, progress]
+      (!selectedStatus || (
+        sessionStatusOverrides[word.id || ""] ||
+        progress.find(item => item.wordId === word.id)?.status ||
+        "new"
+      ) === selectedStatus)
+    ),
+    [shuffledWords, selectedTopicId, selectedStatus, progress, sessionStatusOverrides]
   );
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answer, setAnswer] = useState("");
@@ -66,7 +75,17 @@ export default function WritingPractice() {
     try {
       const updates = calculateNextReview(currentProgress, level);
       await updateDoc(doc(db, "progress", currentProgress.id), updates);
-      handleNext();
+      const wordId = currentWord?.id;
+      if (wordId && selectedStatus) {
+        setSessionStatusOverrides(current => ({
+          ...current,
+          [wordId]: currentProgress.status,
+        }));
+      }
+      setCurrentIndex(displayIndex + 1);
+      setAnswer("");
+      setChecked(false);
+      setShowWordDetails(false);
     } catch (error) {
       console.error("Writing Practice review error:", error);
     } finally {
@@ -84,6 +103,7 @@ export default function WritingPractice() {
           value={selectedTopicId}
           onChange={event => {
             setSelectedTopicId(event.target.value);
+            setSessionStatusOverrides({});
             setCurrentIndex(0);
             setAnswer("");
             setChecked(false);
@@ -101,6 +121,7 @@ export default function WritingPractice() {
           value={selectedStatus}
           onChange={event => {
             setSelectedStatus(event.target.value);
+            setSessionStatusOverrides({});
             setCurrentIndex(0);
             setAnswer("");
             setChecked(false);
@@ -135,7 +156,7 @@ export default function WritingPractice() {
   return (
     <div className="max-w-3xl mx-auto">
       {topicSelector}
-      <section className="min-h-[60vh] bg-[#f6f3ed] border border-[#e7dfd2] rounded-[2rem] p-6 sm:p-10 md:p-16">
+      <section className="bg-[#f6f3ed] border border-[#e7dfd2] rounded-[2rem] p-6 sm:p-10 md:p-16">
       <p className="text-xs font-bold tracking-[0.2em] uppercase text-error mb-4">Viết lại mục từ</p>
       <h1 className="text-4xl sm:text-5xl font-headline font-extrabold text-on-background tracking-tight mb-3">
         {currentWord.meaning}
@@ -181,23 +202,21 @@ export default function WritingPractice() {
       </form>
 
       {checked && (
-        <div className="mt-5 space-y-4">
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
           <p
             role="status"
             className={`text-sm font-semibold ${isCorrect ? "text-green-700" : "text-error"}`}
           >
             {isCorrect ? "Chính xác!" : `Chưa chính xác. Đáp án: ${currentWord.word}`}
           </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setShowWordDetails(true)}
-              className="ml-auto flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/20"
-            >
-              <Info className="h-4 w-4" />
-              Detail
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setShowWordDetails(true)}
+            className="flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/20"
+          >
+            <Info className="h-4 w-4" />
+            Detail
+          </button>
         </div>
       )}
 

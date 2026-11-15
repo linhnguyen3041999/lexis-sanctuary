@@ -278,7 +278,7 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5" />
             <input
-              className="w-full pl-12 pr-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/20"
+              className="w-full pl-12 pr-12 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/20"
               placeholder="Search vocabulary..."
               value={search}
               onChange={e => {
@@ -286,6 +286,20 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
                 setCurrentPage(1);
               }}
             />
+            {search && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch("");
+                  setCurrentPage(1);
+                }}
+                aria-label="Clear search"
+                title="Clear search"
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
           <select
             className="bg-surface-container-low border-none rounded-xl px-4 py-3 text-sm font-medium text-on-surface focus:ring-2 focus:ring-primary/20"

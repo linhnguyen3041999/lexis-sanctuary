@@ -61,6 +61,10 @@ export const reviewSchema = z.object({
   rating: reviewRatingSchema,
 }).strict();
 
+export const dueQuerySchema = z.object({
+  limit: z.coerce.number().int().positive().transform((value) => Math.min(value, 50)).default(25),
+}).strict();
+
 export const aiValidationSchema = vocabularyInputSchema.omit({ topicId: true }).extend({
   provider: z.enum(["gemini", "openai", "deepseek"]).default("gemini"),
   availableTopics: z.array(z.string().trim().min(1).max(100)).max(100).default([]),

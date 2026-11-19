@@ -5,7 +5,7 @@ const localDatabaseId = "00000000-0000-4000-8000-000000000001";
 export default defineConfig({
   worker: {
     name: "lexis-sanctuary",
-    compatibilityDate: "2026-11-18",
+    compatibilityDate: "2026-11-19",
     compatibilityFlags: ["nodejs_compat"],
     entrypoint: "./worker/index.ts",
     workersDev: true,
@@ -19,6 +19,12 @@ export default defineConfig({
         name: "lexis-sanctuary",
         id: process.env.CLOUDFLARE_D1_DATABASE_ID ?? localDatabaseId,
       }),
+      BETTER_AUTH_SECRET: bindings.secret(),
+      GOOGLE_CLIENT_ID: bindings.secret(),
+      GOOGLE_CLIENT_SECRET: bindings.secret(),
+      GEMINI_API_KEY: bindings.secret(),
+      OPENAI_API_KEY: bindings.secret(),
+      DEEPSEEK_API_KEY: bindings.secret(),
     },
     observability: {
       enabled: true,

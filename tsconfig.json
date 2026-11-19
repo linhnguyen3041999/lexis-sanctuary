@@ -15,8 +15,7 @@
     "moduleDetection": "force",
     "allowJs": true,
     "types": [
-      "vite/client",
-      "@cloudflare/workers-types"
+      "vite/client"
     ],
     "jsx": "react-jsx",
     "paths": {
@@ -31,6 +30,7 @@
     "src",
     "worker",
     "tests",
+    ".cloudflare/types/index.d.ts",
     "cloudflare.config.ts",
     "vite.config.ts",
     "vitest.config.ts"

@@ -9,13 +9,12 @@ function stripCodeFences(input: string): string {
 export function parseValidationResult(rawText: string): VocabValidationResult {
   const cleaned = stripCodeFences(rawText || "{}");
   const parsed = JSON.parse(cleaned || "{}");
-  const skillTags = Array.isArray(parsed.skillTags)
-    ? Array.from(new Set(
-      parsed.skillTags
-        .map((tag: unknown) => typeof tag === "string" ? tag.toLowerCase() : "")
-        .filter((tag: string): tag is (typeof SKILL_TAGS)[number] =>
-          tag === "speaking" || tag === "writing"),
-    ))
+  const skillTags: VocabValidationResult["skillTags"] = Array.isArray(parsed.skillTags)
+    ? [...new Set<(typeof SKILL_TAGS)[number]>(parsed.skillTags.flatMap((tag: unknown) => {
+      if (typeof tag !== "string") return [];
+      const normalized = tag.toLowerCase();
+      return normalized === "speaking" || normalized === "writing" ? [normalized] : [];
+    }))]
     : [];
 
   return {

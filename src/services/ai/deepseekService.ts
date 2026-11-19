@@ -35,7 +35,9 @@ export async function validateWithDeepSeek(formData: VocabInput): Promise<VocabV
     throw new Error(`DeepSeek API error: ${response.status} ${errorText}`);
   }
 
-  const data = await response.json();
+  const data = await response.json() as {
+    choices?: Array<{ message?: { content?: string } }>;
+  };
   const content = data?.choices?.[0]?.message?.content || "{}";
   return parseValidationResult(content);
 }

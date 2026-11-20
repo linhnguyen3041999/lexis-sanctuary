@@ -9,6 +9,7 @@
     "build": "cf build",
     "preview": "vite preview",
     "deploy": "cf deploy",
+    "deploy:production": "powershell -NoProfile -File scripts/deploy-production.ps1",
     "typecheck": "cf workers types && tsc --noEmit",
     "lint": "npm run typecheck",
     "test": "vitest run",

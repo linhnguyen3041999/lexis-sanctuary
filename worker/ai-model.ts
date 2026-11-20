@@ -53,6 +53,16 @@ export const geminiResponseJsonSchema = {
   additionalProperties: false,
 } as const;
 
+export function extractProviderErrorMessage(raw: string): string {
+  try {
+    const value = JSON.parse(raw) as { error?: { message?: unknown } };
+    if (typeof value.error?.message === "string") return value.error.message.slice(0, 1_000);
+  } catch {
+    // Some providers return non-JSON error bodies.
+  }
+  return raw.slice(0, 1_000);
+}
+
 function normalizeOptionalText(value: unknown): unknown {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return value;
   const result = { ...value } as Record<string, unknown>;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { geminiResponseJsonSchema, parseAiValidationResult } from "../worker/ai-model";
+import { extractProviderErrorMessage, geminiResponseJsonSchema, parseAiValidationResult } from "../worker/ai-model";
 
 describe("parseAiValidationResult", () => {
   const valid = {
@@ -54,5 +54,10 @@ describe("parseAiValidationResult", () => {
       "suggestions",
     ]));
     expect(geminiResponseJsonSchema.properties.spellingSuggestion.type).toBe("string");
+  });
+
+  it("extracts and truncates a provider error message for safe server logging", () => {
+    expect(extractProviderErrorMessage(JSON.stringify({ error: { message: "Invalid API key" } }))).toBe("Invalid API key");
+    expect(extractProviderErrorMessage("x".repeat(1_100))).toHaveLength(1_000);
   });
 });

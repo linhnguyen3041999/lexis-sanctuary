@@ -1,4 +1,4 @@
-import { geminiResponseJsonSchema, parseAiValidationResult } from "./ai-model";
+import { extractProviderErrorMessage, geminiResponseJsonSchema, parseAiValidationResult } from "./ai-model";
 import { ApiError, json, parseJson } from "./http";
 import { aiValidationSchema, type VocabularyInput } from "./schemas";
 
@@ -23,14 +23,14 @@ INPUT_JSON:
 ${JSON.stringify(input)}`;
 }
 
-async function fetchJsonText(response: Response, provider: string, debugLogs = false): Promise<string> {
+async function fetchJsonText(response: Response, provider: string): Promise<string> {
   const raw = await response.text();
   if (!response.ok) {
     console.error(JSON.stringify({
       message: "AI provider request failed",
       provider,
       status: response.status,
-      ...(debugLogs ? { providerResponse: raw } : {}),
+      providerError: extractProviderErrorMessage(raw),
     }));
     throw new ApiError(502, "AI_PROVIDER_ERROR", "AI provider request failed");
   }
@@ -78,7 +78,7 @@ async function callGemini(apiKey: string, prompt: string, debugLogs: boolean): P
       signal: AbortSignal.timeout(30_000),
     },
   );
-  const raw = await fetchJsonText(response, "gemini", debugLogs);
+  const raw = await fetchJsonText(response, "gemini");
   const data = JSON.parse(raw) as {
     candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
   };

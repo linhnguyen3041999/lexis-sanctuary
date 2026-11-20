@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Search, Edit, Trash2, X, Volume2, Loader2 } from "lucide-react";
-import { useFirebase } from "../hooks/useFirebase";
-import { db, deleteDoc, doc, collection, query, where, getDocs, updateDoc } from "../firebase";
+import { bulkDeleteVocabulary } from "../api";
+import { useAppData, useInvalidateAppData } from "../hooks/useAppData";
 import { Vocabulary } from "../types";
 import { speakEnglish } from "../services/speechService";
 
@@ -24,7 +24,8 @@ interface WordListProps {
 }
 
 export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
-  const { user, topics, progress, vocabulary } = useFirebase();
+  const { user, topics, progress, vocabulary } = useAppData();
+  const invalidateAppData = useInvalidateAppData(user?.id);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterLevel, setFilterLevel] = useState("");
@@ -40,28 +41,9 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
   const skipNextFiltersPersistRef = useRef(false);
 
   const filterStorageKey = useMemo(() => {
-    if (!user?.uid) return "";
-    return `${WORD_LIST_FILTERS_STORAGE_KEY_PREFIX}:${user.uid}`;
-  }, [user?.uid]);
-
-  const capitalizeFirstLetter = (value: string) => {
-    const trimmed = value.trim();
-    if (!trimmed) return "";
-    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
-  };
-
-  const runWordCapitalizationMigration = async (userId: string) => {
-    const vocabQuery = query(collection(db, "vocabulary"), where("userId", "==", userId));
-    const snap = await getDocs(vocabQuery);
-
-    for (const docSnap of snap.docs) {
-      const data = docSnap.data() as Vocabulary;
-      const nextWord = capitalizeFirstLetter(data.word || "");
-      if (nextWord && nextWord !== data.word) {
-        await updateDoc(doc(db, "vocabulary", docSnap.id), { word: nextWord });
-      }
-    }
-  };
+    if (!user?.id) return "";
+    return `${WORD_LIST_FILTERS_STORAGE_KEY_PREFIX}:${user.id}`;
+  }, [user?.id]);
 
 
   const handleListen = (text: string) => {
@@ -81,13 +63,8 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
   const handleDelete = async () => {
     if (deleteIds.length === 0) return;
     try {
-      await Promise.all(deleteIds.map(async id => {
-        await deleteDoc(doc(db, "vocabulary", id));
-        const wordProgress = progress.find(pr => pr.wordId === id);
-        if (wordProgress?.id) {
-          await deleteDoc(doc(db, "progress", wordProgress.id));
-        }
-      }));
+      await bulkDeleteVocabulary(deleteIds);
+      await invalidateAppData();
       setSelectedIds(current => current.filter(id => !deleteIds.includes(id)));
       setDeleteIds([]);
     } catch (error) {
@@ -190,23 +167,6 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
     }
   }, [filterStorageKey, search, filterType, filterLevel, filterTopicId, filterStatus, filterSkillTag, currentPage]);
 
-  useEffect(() => {
-    if (!user) return;
-    const key = `lexis:migrate-capitalize-word:${user.uid}`;
-    if (localStorage.getItem(key)) return;
-
-    const runMigration = async () => {
-      try {
-        await runWordCapitalizationMigration(user.uid);
-        localStorage.setItem(key, "1");
-      } catch (error) {
-        console.error("Migration Error:", error);
-      }
-    };
-
-    void runMigration();
-  }, [user]);
-
   const topicNameById = useMemo(() => {
     return new Map(topics.map(topic => [topic.id, topic.name]));
   }, [topics]);
@@ -282,7 +242,7 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
               placeholder="Search vocabulary..."
               value={search}
               onChange={e => {
-                setSearch(capitalizeFirstLetter(e.target.value));
+                setSearch(e.target.value);
                 setCurrentPage(1);
               }}
             />

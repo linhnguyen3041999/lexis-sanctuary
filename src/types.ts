@@ -1,5 +1,5 @@
 export interface Vocabulary {
-  id?: string;
+  id: string;
   word: string;
   type: string;
   skillTags?: SkillTag[];
@@ -12,23 +12,31 @@ export interface Vocabulary {
   meaning: string;
   example: string;
   topicId: string;
-  userId: string;
-  createdAt: any;
+  createdAt: string;
+  updatedAt: string;
+  progress: {
+    intervalDays: number;
+    repetition: number;
+    easeFactor: number;
+    nextReviewAt: string;
+    lastReviewedAt: string | null;
+    status: "new" | "learning" | "good" | "mastered";
+  };
 }
 
 export type SkillTag = "speaking" | "writing";
 
 export interface Topic {
-  id?: string;
+  id: string;
   name: string;
-  userId: string;
-  isUnclassified?: boolean;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface UserProgress {
   id?: string;
   wordId: string;
-  userId: string;
   interval: number;
   repetition: number;
   easeFactor: number;

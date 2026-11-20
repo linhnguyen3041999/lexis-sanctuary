@@ -1,9 +1,8 @@
 import { FormEvent, useMemo, useState } from "react";
 import { Check, Info, PenLine, RotateCw, X } from "lucide-react";
-import { db, doc, updateDoc } from "../firebase";
-import { useFirebase } from "../hooks/useFirebase";
+import { reviewVocabulary } from "../api";
+import { useAppData, useInvalidateAppData } from "../hooks/useAppData";
 import { SRSLevel, UserProgress, Vocabulary } from "../types";
-import { calculateNextReview } from "../services/srsService";
 
 function shuffleWords(words: Vocabulary[]): Vocabulary[] {
   const shuffled = [...words];
@@ -19,7 +18,8 @@ function normalizeAnswer(answer: string): string {
 }
 
 export default function WritingPractice() {
-  const { vocabulary, topics, progress } = useFirebase();
+  const { user, vocabulary, topics, progress } = useAppData();
+  const invalidateAppData = useInvalidateAppData(user?.id);
   const [selectedTopicId, setSelectedTopicId] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
   const [sessionStatusOverrides, setSessionStatusOverrides] = useState<Record<string, UserProgress["status"]>>({});
@@ -69,17 +69,17 @@ export default function WritingPractice() {
   };
 
   const handleReview = async (level: SRSLevel) => {
-    if (!currentProgress?.id || updatingStatus) return;
+    if (!currentWord || updatingStatus) return;
 
     setUpdatingStatus(level);
     try {
-      const updates = calculateNextReview(currentProgress, level);
-      await updateDoc(doc(db, "progress", currentProgress.id), updates);
-      const wordId = currentWord?.id;
+      const reviewed = await reviewVocabulary(currentWord.id, level);
+      await invalidateAppData();
+      const wordId = currentWord.id;
       if (wordId && selectedStatus) {
         setSessionStatusOverrides(current => ({
           ...current,
-          [wordId]: currentProgress.status,
+          [wordId]: reviewed.progress.status,
         }));
       }
       setCurrentIndex(displayIndex + 1);

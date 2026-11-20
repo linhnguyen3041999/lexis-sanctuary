@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { AlertTriangle, Edit3, FolderTree, Loader2, Plus, Save, Trash2, X } from "lucide-react";
-import { db, collection, deleteDoc, doc, setDoc, updateDoc } from "../firebase";
-import { useFirebase } from "../hooks/useFirebase";
+import { createTopic, deleteTopic as deleteTopicRequest, updateTopic } from "../api";
+import { useAppData, useInvalidateAppData } from "../hooks/useAppData";
 import { Topic } from "../types";
 
 type TopicDraft = {
@@ -10,7 +10,8 @@ type TopicDraft = {
 };
 
 export default function TopicManager() {
-  const { user, topics, vocabulary } = useFirebase();
+  const { user, topics, vocabulary } = useAppData();
+  const invalidateAppData = useInvalidateAppData(user?.id);
   const [draft, setDraft] = useState<TopicDraft>({ name: "" });
   const [deleteTopic, setDeleteTopic] = useState<Topic | null>(null);
   const [saving, setSaving] = useState(false);
@@ -37,8 +38,6 @@ export default function TopicManager() {
   const normalizeTopicName = (value: string) => value.trim().replace(/\s+/g, " ");
 
   const handleSave = async () => {
-    if (!user) return;
-
     const name = normalizeTopicName(draft.name);
     if (!name) {
       setError("Topic name is required.");
@@ -58,19 +57,11 @@ export default function TopicManager() {
 
     try {
       if (draft.id) {
-        await updateDoc(doc(db, "topics", draft.id), {
-          name,
-          userId: user.uid,
-          isUnclassified: false,
-        });
+        await updateTopic(draft.id, name);
       } else {
-        const topicRef = doc(collection(db, "topics"));
-        await setDoc(topicRef, {
-          name,
-          userId: user.uid,
-          isUnclassified: false,
-        });
+        await createTopic(name);
       }
+      await invalidateAppData();
       resetDraft();
     } catch (saveError) {
       console.error("Topic save error:", saveError);
@@ -80,23 +71,6 @@ export default function TopicManager() {
     }
   };
 
-  const getOrCreateFallbackTopicId = async (excludedTopicId: string) => {
-    if (!user) return "";
-
-    const existingGeneralTopic = topics.find(
-      (topic) => topic.id !== excludedTopicId && topic.name.trim().toLowerCase() === "general",
-    );
-    if (existingGeneralTopic?.id) return existingGeneralTopic.id;
-
-    const topicRef = doc(collection(db, "topics"));
-    await setDoc(topicRef, {
-      name: "General",
-      userId: user.uid,
-      isUnclassified: false,
-    });
-    return topicRef.id;
-  };
-
   const handleDelete = async () => {
     if (!deleteTopic?.id) return;
 
@@ -104,19 +78,8 @@ export default function TopicManager() {
     setError("");
 
     try {
-      const wordsInTopic = vocabulary.filter((word) => word.topicId === deleteTopic.id);
-
-      if (wordsInTopic.length > 0) {
-        const fallbackTopicId = await getOrCreateFallbackTopicId(deleteTopic.id);
-        await Promise.all(
-          wordsInTopic.map((word) => {
-            if (!word.id) return Promise.resolve();
-            return updateDoc(doc(db, "vocabulary", word.id), { topicId: fallbackTopicId });
-          }),
-        );
-      }
-
-      await deleteDoc(doc(db, "topics", deleteTopic.id));
+      await deleteTopicRequest(deleteTopic.id);
+      await invalidateAppData();
       if (draft.id === deleteTopic.id) resetDraft();
       setDeleteTopic(null);
     } catch (deleteError) {
@@ -216,7 +179,7 @@ export default function TopicManager() {
 
           <div className="space-y-3">
             {sortedTopics.map((topic) => {
-              const wordCount = topic.id ? wordCountByTopicId.get(topic.id) || 0 : 0;
+              const wordCount = wordCountByTopicId.get(topic.id) || 0;
 
               return (
                 <div
@@ -230,7 +193,7 @@ export default function TopicManager() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
+                    {!topic.isDefault && <button
                       type="button"
                       onClick={() => {
                         setDraft({ id: topic.id, name: topic.name });
@@ -241,8 +204,8 @@ export default function TopicManager() {
                       title="Edit topic"
                     >
                       <Edit3 className="w-5 h-5" />
-                    </button>
-                    <button
+                    </button>}
+                    {!topic.isDefault && <button
                       type="button"
                       onClick={() => setDeleteTopic(topic)}
                       className="p-2 rounded-full text-on-surface-variant hover:text-error hover:bg-error-container/40"
@@ -250,7 +213,7 @@ export default function TopicManager() {
                       title="Delete topic"
                     >
                       <Trash2 className="w-5 h-5" />
-                    </button>
+                    </button>}
                   </div>
                 </div>
               );

@@ -1,10 +1,10 @@
 import React from "react";
 import { Play, TrendingUp, CheckCircle2, Clock, Star, ChevronRight } from "lucide-react";
-import { useFirebase } from "../hooks/useFirebase";
+import { useAppData } from "../hooks/useAppData";
 import { isBefore } from "date-fns";
 
 export default function Dashboard({ setActiveTab }: { setActiveTab: (tab: string) => void }) {
-  const { user, vocabulary, progress, topics } = useFirebase();
+  const { user, vocabulary, progress, topics } = useAppData();
 
   const dueCount = vocabulary.filter(v => {
     const p = progress.find(pr => pr.wordId === v.id);
@@ -19,7 +19,7 @@ export default function Dashboard({ setActiveTab }: { setActiveTab: (tab: string
   return (
     <div className="space-y-8 sm:space-y-10">
       <header className="mb-8 sm:mb-10">
-        <h1 className="text-3xl sm:text-4xl font-headline font-extrabold text-on-background tracking-tight mb-2">Welcome back, {user?.displayName?.split(" ")[0]}</h1>
+        <h1 className="text-3xl sm:text-4xl font-headline font-extrabold text-on-background tracking-tight mb-2">Welcome back, {user?.name?.split(" ")[0]}</h1>
         <p className="text-sm sm:text-base text-on-surface-variant font-body">You're on a <span className="text-primary font-bold">12-day streak</span>. Ready for your morning session?</p>
       </header>
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { LayoutDashboard, BookOpen, Layers, GraduationCap, LogOut, HelpCircle, Search, Bell, Settings, Menu, X, FolderTree, PenLine, ChevronLeft, ChevronRight } from "lucide-react";
-import { auth, googleProvider, signInWithPopup } from "../firebase";
-import { useFirebase } from "../hooks/useFirebase";
+import { authClient } from "../auth-client";
+import { useAppData } from "../hooks/useAppData";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -10,7 +10,7 @@ interface LayoutProps {
 }
 
 export default function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
-  const { user, loading } = useFirebase();
+  const { user, loading, error } = useAppData();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [desktopNavCollapsed, setDesktopNavCollapsed] = useState(() => {
     try {
@@ -53,18 +53,26 @@ export default function Layout({ children, activeTab, setActiveTab }: LayoutProp
 
   const handleLogin = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
-    } catch (error: any) {
-      if (error.code === "auth/popup-closed-by-user") {
-        console.log("Sign-in popup closed by user.");
-      } else {
-        console.error("Auth Error:", error);
-      }
+      await authClient.signIn.social({ provider: "google", callbackURL: window.location.href });
+    } catch (loginError) {
+      console.error("Auth Error:", loginError);
     }
   };
-  const handleLogout = () => auth.signOut();
+  const handleLogout = () => authClient.signOut();
 
-  if (loading) return <div className="h-screen flex items-center justify-center">Loading Sanctuary...</div>;
+  if (loading) return <div className="h-screen flex items-center justify-center" role="status" aria-busy="true">Loading Sanctuary...</div>;
+
+  if (error) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-background p-6 text-center" role="alert">
+        <h1 className="text-2xl font-headline font-bold text-on-background">Unable to load your sanctuary</h1>
+        <p className="mt-2 text-on-surface-variant">Please check your connection and try again.</p>
+        <button type="button" onClick={() => window.location.reload()} className="mt-6 bg-primary text-on-primary px-6 py-2.5 rounded-lg font-bold">
+          Try again
+        </button>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
@@ -115,7 +123,13 @@ export default function Layout({ children, activeTab, setActiveTab }: LayoutProp
             </div>
             <button className="p-2 hover:bg-surface-container-high rounded-full"><Bell className="w-5 h-5" /></button>
             <button className="hidden sm:inline-flex p-2 hover:bg-surface-container-high rounded-full"><Settings className="w-5 h-5" /></button>
-            <img src={user.photoURL || ""} alt="Profile" className="w-8 h-8 rounded-full border border-outline-variant/20" />
+            {user.image ? (
+              <img src={user.image} alt={`${user.name || "User"} profile`} className="w-8 h-8 rounded-full border border-outline-variant/20" />
+            ) : (
+              <span className="w-8 h-8 rounded-full border border-outline-variant/20 bg-primary-container text-primary flex items-center justify-center font-bold" aria-label="User profile">
+                {(user.name || user.email || "U").charAt(0).toUpperCase()}
+              </span>
+            )}
           </div>
         </div>
       </header>

@@ -1,9 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Volume2, Edit, Star, FlipHorizontal, CheckCircle2, Loader2, Sparkles, Info, X } from "lucide-react";
-import { db, updateDoc, doc } from "../firebase";
-import { useFirebase } from "../hooks/useFirebase";
-import { Vocabulary, UserProgress, SRSLevel } from "../types";
-import { calculateNextReview } from "../services/srsService";
+import { reviewVocabulary } from "../api";
+import { useAppData, useInvalidateAppData } from "../hooks/useAppData";
+import { Vocabulary, SRSLevel } from "../types";
 import { speakEnglish } from "../services/speechService";
 import { isBefore, format } from "date-fns";
 
@@ -33,7 +32,8 @@ function SkillTagBadges({ tags }: { tags?: Vocabulary["skillTags"] }) {
 }
 
 export default function Flashcard() {
-  const { vocabulary, progress, topics } = useFirebase();
+  const { user, vocabulary, progress, topics } = useAppData();
+  const invalidateAppData = useInvalidateAppData(user?.id);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedTopicId, setSelectedTopicId] = useState("");
   const [flipped, setFlipped] = useState(false);
@@ -119,12 +119,12 @@ export default function Flashcard() {
   }, [currentWord]);
 
   const handleReview = async (level: SRSLevel) => {
-    if (!currentProgress || !currentWord) return;
+    if (!currentWord) return;
     setLoading(true);
 
     try {
-      const updates = calculateNextReview(currentProgress, level);
-      await updateDoc(doc(db, "progress", currentProgress.id!), updates);
+      await reviewVocabulary(currentWord.id, level);
+      await invalidateAppData();
       
       setShowWordDetails(false);
       setFlipped(false);

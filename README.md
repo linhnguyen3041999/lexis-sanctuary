@@ -1,6 +1,6 @@
 # Lexis Sanctuary
 
-Lexis Sanctuary is an AI-powered cognitive sanctuary designed for mastering English vocabulary. It leverages the Gemini AI API for smart word validation, topic classification, and high-quality text-to-speech (TTS) pronunciation. The app uses Firebase for real-time data synchronization and user progress tracking with a Spaced Repetition System (SRS).
+Lexis Sanctuary is a React vocabulary-learning application deployed as one Cloudflare Worker. Static assets, the REST API, Google sign-in, AI validation, and D1 data access share the same origin.
 
 ## Features
 
@@ -10,13 +10,14 @@ Lexis Sanctuary is an AI-powered cognitive sanctuary designed for mastering Engl
 - **Topic Exploration:** Organize your vocabulary into topics and explore them with detailed views.
 - **Flashcards (SRS):** Master your vocabulary using a Spaced Repetition System with interactive flashcards.
 - **AI Pronunciation (TTS):** Listen to high-quality AI-generated pronunciations for every word.
-- **Real-time Sync:** All your data is synced in real-time across devices using Firebase.
+- **Cached Sync:** TanStack Query updates after mutations and refetches when the browser regains focus.
 
 ## Prerequisites
 
 Before you begin, ensure you have the following installed:
-- [Node.js](https://nodejs.org/) (v18 or later)
+- [Node.js](https://nodejs.org/) (v22 or later)
 - [npm](https://www.npmjs.com/) (usually comes with Node.js)
+- A Cloudflare account authenticated with the `cf` CLI.
 
 ## Getting Started
 
@@ -35,31 +36,21 @@ npm install
 
 ### 3. Configuration
 
-#### Firebase Setup
-1. Create a new project in the [Firebase Console](https://console.firebase.google.com/).
-2. Enable **Firestore Database** and **Firebase Authentication** (Google Sign-In).
-3. Create a web app in your Firebase project and copy the configuration.
-4. Create a `firebase-applet-config.json` file in the root directory with your config:
-   ```json
-   {
-     "apiKey": "YOUR_API_KEY",
-     "authDomain": "YOUR_AUTH_DOMAIN",
-     "projectId": "YOUR_PROJECT_ID",
-     "storageBucket": "YOUR_STORAGE_BUCKET",
-     "messagingSenderId": "YOUR_MESSAGING_SENDER_ID",
-     "appId": "YOUR_APP_ID",
-     "firestoreDatabaseId": "(default)"
-   }
-   ```
-5. Deploy the `firestore.rules` provided in the repository to your Firebase project.
+#### Cloudflare and Google OAuth
+1. Create a D1 database and provide its UUID through `CLOUDFLARE_D1_DATABASE_ID` when deploying.
+2. Create a Google OAuth web client.
+3. Add `<workers-url>/api/auth/callback/google` as its authorized redirect URI.
+4. Copy `.env.example` to `.dev.vars` for local secrets, then configure production secrets with `cf workers secret put`.
 
 #### Environment Variables
-Create a `.env` file in the root directory (you can use `.env.example` as a template):
+Create a `.dev.vars` file in the root directory (you can use `.env.example` as a template):
 ```env
+BETTER_AUTH_SECRET=development-only-secret-at-least-32-characters
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
 GEMINI_API_KEY=your_gemini_api_key
-APP_URL=http://localhost:6001
 ```
-*Note: You can get a Gemini API key from [Google AI Studio](https://aistudio.google.com/).*
+Never prefix secrets with `VITE_`; they are used only by the Worker.
 
 ### 4. Running the Application
 
@@ -68,24 +59,23 @@ To start the development server with hot reloading:
 ```bash
 npm run dev
 ```
-The app will be available at `http://localhost:6001`.
+The app will be available at the Vite URL printed by the command (normally `http://localhost:5173`). Before starting it, apply local migrations with `npm run db:migrate:local`.
 
-#### Production Mode
-To build the app for production and start the server:
+#### Production deploy
+Apply production migrations, set secrets, then deploy:
 ```bash
-npm run build
-npm start
+cf d1 migrations apply <database-id>
+npm run deploy
 ```
 
 ## Project Structure
 
 - `/src`: Frontend React application code.
   - `/components`: Reusable UI components.
-  - `/hooks`: Custom React hooks (e.g., `useFirebase`).
-  - `/services`: Logic for external APIs (Gemini, SRS).
-- `server.ts`: Express server entry point (handles API routes and Vite middleware).
-- `firestore.rules`: Security rules for the Firestore database.
-- `firebase-blueprint.json`: Data structure definition for the application.
+  - `/hooks`: TanStack Query-backed app data hooks.
+  - `/services`: Browser-only utilities such as speech synthesis.
+- `/worker`: Worker API, Better Auth setup, input validation, and D1 query code.
+- `/migrations`: Versioned D1 schema migrations.
 
 ## License
 

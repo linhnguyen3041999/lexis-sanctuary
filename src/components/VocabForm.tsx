@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Search, Sparkles, Loader2, Save, Trash2 } from "lucide-react";
-import { db, collection, setDoc, doc, serverTimestamp } from "../firebase";
-import { useFirebase } from "../hooks/useFirebase";
+import { ChevronDown, Search, Sparkles, Loader2, Save } from "lucide-react";
+import { createVocabulary, updateVocabulary } from "../api";
+import { useAppData, useInvalidateAppData } from "../hooks/useAppData";
 import { Vocabulary, Topic } from "../types";
 import { validateAndCompleteVocab } from "../services/aiService";
 
@@ -14,7 +14,8 @@ interface VocabFormProps {
 }
 
 export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFormProps) {
-  const { user, topics, vocabulary } = useFirebase();
+  const { user, topics, vocabulary } = useAppData();
+  const invalidateAppData = useInvalidateAppData(user?.id);
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [selectedTopicId, setSelectedTopicId] = useState(editingWord?.topicId || AI_SELECT_TOPIC);
@@ -161,29 +162,13 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
     setLoading(true);
 
     try {
-      // Save Vocabulary
-      const vocabRef = editingWord?.id ? doc(db, "vocabulary", editingWord.id) : doc(collection(db, "vocabulary"));
-      const vocabData: Vocabulary = {
+      const vocabData = {
         ...formData,
         topicId: selectedTopic.id,
-        userId: user.uid,
-        createdAt: editingWord?.createdAt || serverTimestamp(),
       };
-      await setDoc(vocabRef, vocabData);
-
-      // 3. Initialize Progress (only for new words)
-      if (!editingWord) {
-        const progressRef = doc(collection(db, "progress"));
-        await setDoc(progressRef, {
-          wordId: vocabRef.id,
-          userId: user.uid,
-          interval: 0,
-          repetition: 0,
-          easeFactor: 2.5,
-          nextReview: new Date(),
-          status: "new",
-        });
-      }
+      if (editingWord) await updateVocabulary(editingWord.id, vocabData);
+      else await createVocabulary(vocabData);
+      await invalidateAppData();
 
       // Reset
       setFormData({ word: "", skillTags: [], type: "noun", level: "", ipa: "", synonyms: "", verbPattern: "", collocations: "", relatedForms: "", meaning: "", example: "" });
@@ -269,7 +254,6 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
                   <option value="adverb">Adverb</option>
                   <option value="idiom">Idiom</option>
                   <option value="collocation">Collocations</option>
-                  <option value="expression">Expression</option>
                 </select>
               </div>
               <div className="space-y-1.5">

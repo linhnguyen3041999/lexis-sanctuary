@@ -65,7 +65,7 @@ The app will be available at the Vite URL printed by the command (normally `http
 Apply production migrations, set secrets, then deploy:
 ```bash
 cf d1 migrations apply <database-id>
-npm run deploy
+npm run deploy:production
 ```
 
 ## Project Structure

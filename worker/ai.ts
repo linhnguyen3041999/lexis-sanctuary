@@ -79,20 +79,24 @@ export async function handleAi(request: Request, env: Env): Promise<Response> {
   if (request.method !== "POST") throw new ApiError(405, "METHOD_NOT_ALLOWED", "Method not allowed");
   const { provider, ...input } = await parseJson(request, aiValidationSchema);
   const prompt = buildPrompt(input);
+  const optionalProviders = env as Env & {
+    OPENAI_API_KEY?: string;
+    DEEPSEEK_API_KEY?: string;
+  };
   let text: string;
   try {
     if (provider === "gemini") {
       if (!env.GEMINI_API_KEY) throw new ApiError(503, "AI_NOT_CONFIGURED", "Gemini is not configured");
       text = await callGemini(env.GEMINI_API_KEY, prompt);
     } else if (provider === "openai") {
-      if (!env.OPENAI_API_KEY) throw new ApiError(503, "AI_NOT_CONFIGURED", "OpenAI is not configured");
+      if (!optionalProviders.OPENAI_API_KEY) throw new ApiError(503, "AI_NOT_CONFIGURED", "OpenAI is not configured");
       text = await callOpenAiCompatible(
-        "https://api.openai.com/v1/chat/completions", env.OPENAI_API_KEY, "gpt-4o", prompt, "openai",
+        "https://api.openai.com/v1/chat/completions", optionalProviders.OPENAI_API_KEY, "gpt-4o", prompt, "openai",
       );
     } else {
-      if (!env.DEEPSEEK_API_KEY) throw new ApiError(503, "AI_NOT_CONFIGURED", "DeepSeek is not configured");
+      if (!optionalProviders.DEEPSEEK_API_KEY) throw new ApiError(503, "AI_NOT_CONFIGURED", "DeepSeek is not configured");
       text = await callOpenAiCompatible(
-        "https://api.deepseek.com/chat/completions", env.DEEPSEEK_API_KEY, "deepseek-chat", prompt, "deepseek",
+        "https://api.deepseek.com/chat/completions", optionalProviders.DEEPSEEK_API_KEY, "deepseek-chat", prompt, "deepseek",
       );
     }
     return json({ result: parseAiValidationResult(text) });

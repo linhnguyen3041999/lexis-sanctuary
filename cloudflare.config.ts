@@ -24,8 +24,6 @@ export default defineConfig({
       GOOGLE_CLIENT_ID: bindings.secret(),
       GOOGLE_CLIENT_SECRET: bindings.secret(),
       GEMINI_API_KEY: bindings.secret(),
-      OPENAI_API_KEY: bindings.secret(),
-      DEEPSEEK_API_KEY: bindings.secret(),
     },
     observability: {
       enabled: true,

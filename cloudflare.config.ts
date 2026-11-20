@@ -10,6 +10,9 @@ export default defineConfig({
     entrypoint: "./worker/index.ts",
     workersDev: true,
     previewUrls: true,
+    placement: {
+      region: "gcp:asia-southeast1",
+    },
     assets: {
       notFoundHandling: "single-page-application",
       runWorkerFirst: ["/api/*"],

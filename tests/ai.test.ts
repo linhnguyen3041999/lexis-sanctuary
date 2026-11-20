@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseAiValidationResult } from "../worker/ai-model";
+import { geminiResponseJsonSchema, parseAiValidationResult } from "../worker/ai-model";
 
 describe("parseAiValidationResult", () => {
   const valid = {
@@ -26,5 +26,33 @@ describe("parseAiValidationResult", () => {
 
   it("rejects provider output with unsupported enums", () => {
     expect(() => parseAiValidationResult(JSON.stringify({ ...valid, type: "expression" }))).toThrow();
+  });
+
+  it("normalizes null optional text returned by Gemini", () => {
+    expect(parseAiValidationResult(JSON.stringify({
+      ...valid,
+      spellingSuggestion: null,
+      verbPattern: null,
+      collocations: null,
+      relatedForms: null,
+      suggestions: null,
+    }))).toMatchObject({
+      spellingSuggestion: "",
+      verbPattern: "",
+      collocations: "",
+      relatedForms: "",
+      suggestions: "",
+    });
+  });
+
+  it("declares required string fields for Gemini structured output", () => {
+    expect(geminiResponseJsonSchema.required).toEqual(expect.arrayContaining([
+      "spellingSuggestion",
+      "verbPattern",
+      "collocations",
+      "relatedForms",
+      "suggestions",
+    ]));
+    expect(geminiResponseJsonSchema.properties.spellingSuggestion.type).toBe("string");
   });
 });

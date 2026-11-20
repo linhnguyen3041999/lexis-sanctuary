@@ -1,4 +1,4 @@
-import { parseAiValidationResult } from "./ai-model";
+import { geminiResponseJsonSchema, parseAiValidationResult } from "./ai-model";
 import { ApiError, json, parseJson } from "./http";
 import { aiValidationSchema, type VocabularyInput } from "./schemas";
 
@@ -16,18 +16,25 @@ Rules:
 - skillTags must contain speaking and/or writing. type must be noun, verb, adjective, adverb, idiom, or collocation.
 - level must be A1, A2, B1, B2, C1, C2, or unknown.
 - topic must exactly match one availableTopics value, or be empty if none match. Never invent a topic.
+- Every text field is required. Use an empty string when it does not apply; never use null.
 - Return only a JSON object with: word, spellingSuggestion, skillTags, type, level, ipa, synonyms, verbPattern, collocations, relatedForms, meaning, example, topic, isCorrect, suggestions.
 
 INPUT_JSON:
 ${JSON.stringify(input)}`;
 }
 
-async function fetchJsonText(response: Response, provider: string): Promise<string> {
+async function fetchJsonText(response: Response, provider: string, debugLogs = false): Promise<string> {
+  const raw = await response.text();
   if (!response.ok) {
-    console.error(JSON.stringify({ message: "AI provider request failed", provider, status: response.status }));
+    console.error(JSON.stringify({
+      message: "AI provider request failed",
+      provider,
+      status: response.status,
+      ...(debugLogs ? { providerResponse: raw } : {}),
+    }));
     throw new ApiError(502, "AI_PROVIDER_ERROR", "AI provider request failed");
   }
-  return response.text();
+  return raw;
 }
 
 async function callOpenAiCompatible(
@@ -55,7 +62,7 @@ async function callOpenAiCompatible(
   return data.choices?.[0]?.message?.content ?? "{}";
 }
 
-async function callGemini(apiKey: string, prompt: string): Promise<string> {
+async function callGemini(apiKey: string, prompt: string, debugLogs: boolean): Promise<string> {
   const response = await fetch(
     "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent",
     {
@@ -63,16 +70,23 @@ async function callGemini(apiKey: string, prompt: string): Promise<string> {
       headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
       body: JSON.stringify({
         contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: { responseMimeType: "application/json" },
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseJsonSchema: geminiResponseJsonSchema,
+        },
       }),
       signal: AbortSignal.timeout(30_000),
     },
   );
-  const raw = await fetchJsonText(response, "gemini");
+  const raw = await fetchJsonText(response, "gemini", debugLogs);
   const data = JSON.parse(raw) as {
     candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
   };
-  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}";
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}";
+  if (debugLogs) {
+    console.info(JSON.stringify({ event: "gemini_response_received", provider: "gemini", response: text }));
+  }
+  return text;
 }
 
 export async function handleAi(request: Request, env: Env): Promise<Response> {
@@ -87,7 +101,11 @@ export async function handleAi(request: Request, env: Env): Promise<Response> {
   try {
     if (provider === "gemini") {
       if (!env.GEMINI_API_KEY) throw new ApiError(503, "AI_NOT_CONFIGURED", "Gemini is not configured");
-      text = await callGemini(env.GEMINI_API_KEY, prompt);
+      text = await callGemini(
+        env.GEMINI_API_KEY,
+        prompt,
+        env.BETTER_AUTH_URL.startsWith("http://localhost"),
+      );
     } else if (provider === "openai") {
       if (!optionalProviders.OPENAI_API_KEY) throw new ApiError(503, "AI_NOT_CONFIGURED", "OpenAI is not configured");
       text = await callOpenAiCompatible(

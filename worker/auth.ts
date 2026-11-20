@@ -58,7 +58,7 @@ const authSchema = {
 } as const;
 
 export function createAuth(env: Env, request: Request) {
-  const origin = new URL(request.url).origin;
+  const origin = env.BETTER_AUTH_URL || new URL(request.url).origin;
   const secure = origin.startsWith("https://");
   const incomingCf = request.cf && "colo" in request.cf ? request.cf : undefined;
   const asNullableString = (value: unknown): string | null => typeof value === "string" ? value : null;

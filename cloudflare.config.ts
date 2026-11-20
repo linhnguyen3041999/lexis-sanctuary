@@ -19,6 +19,7 @@ export default defineConfig({
         name: "lexis-sanctuary",
         id: process.env.CLOUDFLARE_D1_DATABASE_ID ?? localDatabaseId,
       }),
+      BETTER_AUTH_URL: bindings.text(process.env.BETTER_AUTH_URL ?? "http://localhost:5173"),
       BETTER_AUTH_SECRET: bindings.secret(),
       GOOGLE_CLIENT_ID: bindings.secret(),
       GOOGLE_CLIENT_SECRET: bindings.secret(),

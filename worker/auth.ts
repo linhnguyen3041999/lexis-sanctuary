@@ -47,14 +47,6 @@ const authSchema = {
     },
     storeInDatabase: true,
   },
-  rateLimit: {
-    enabled: true,
-    storage: "database" as const,
-    window: 15 * 60,
-    max: 10,
-    modelName: "auth_rate_limits",
-    fields: { lastRequest: "last_request" },
-  },
 } as const;
 
 export function createAuth(env: Env, request: Request) {

@@ -13,7 +13,8 @@
     "typecheck": "cf workers types && tsc --noEmit",
     "lint": "npm run typecheck",
     "test": "vitest run",
-    "db:migrate:local": "cf d1 migrations apply 00000000-0000-4000-8000-000000000001 --local --persist-to .cloudflare/state"
+    "db:migrate:local": "cf d1 migrations apply 00000000-0000-4000-8000-000000000001 --local --persist-to .cloudflare/state",
+    "db:migrate:remote": "cf d1 migrations apply 116bd7e2-9f49-46c0-95c2-461b8176d161 --dir migrations"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.108.0",

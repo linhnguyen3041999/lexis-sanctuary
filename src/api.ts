@@ -43,6 +43,17 @@ export async function getTopics(): Promise<Topic[]> {
   return (await apiRequest<{ topics: Topic[] }>("/api/topics")).topics;
 }
 
+export interface DashboardSummary {
+  topics: number;
+  vocabulary: number;
+  due: number;
+  byStatus: Record<"new" | "learning" | "good" | "mastered", number>;
+}
+
+export async function getDashboardSummary(): Promise<DashboardSummary> {
+  return (await apiRequest<{ summary: DashboardSummary }>("/api/dashboard/summary")).summary;
+}
+
 export async function createTopic(name: string): Promise<Topic> {
   return (await apiRequest<{ topic: Topic }>("/api/topics", {
     method: "POST",
@@ -66,17 +77,23 @@ interface VocabularyPage {
   nextCursor: string | null;
 }
 
-export async function getAllVocabulary(): Promise<Vocabulary[]> {
-  const vocabulary: Vocabulary[] = [];
-  let cursor: string | null = null;
-  do {
-    const params = new URLSearchParams({ limit: "50" });
-    if (cursor) params.set("cursor", cursor);
-    const page: VocabularyPage = await apiRequest(`/api/vocabulary?${params}`);
-    vocabulary.push(...page.vocabulary);
-    cursor = page.nextCursor;
-  } while (cursor);
-  return vocabulary;
+export interface VocabularyListQuery {
+  cursor?: string;
+  search?: string;
+  type?: string;
+  level?: string;
+  topicId?: string;
+  status?: string;
+  skillTag?: SkillTag;
+  limit?: number;
+}
+
+export async function getVocabularyPage(query: VocabularyListQuery = {}): Promise<VocabularyPage> {
+  const params = new URLSearchParams({ limit: String(query.limit ?? 25) });
+  for (const [key, value] of Object.entries(query)) {
+    if (value && key !== "limit") params.set(key, value);
+  }
+  return apiRequest(`/api/vocabulary?${params}`);
 }
 
 export interface VocabularyPayload {

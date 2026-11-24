@@ -1,7 +1,9 @@
 import { FormEvent, useMemo, useState } from "react";
 import { Check, Info, PenLine, RotateCw, X } from "lucide-react";
 import { reviewVocabulary } from "../api";
-import { useAppData, useInvalidateAppData } from "../hooks/useAppData";
+import { queryKeys } from "../api";
+import { useQueryClient } from "@tanstack/react-query";
+import { replaceVocabularyInCache, useAppData } from "../hooks/useAppData";
 import { SRSLevel, UserProgress, Vocabulary } from "../types";
 
 function shuffleWords(words: Vocabulary[]): Vocabulary[] {
@@ -18,8 +20,8 @@ function normalizeAnswer(answer: string): string {
 }
 
 export default function WritingPractice() {
-  const { user, vocabulary, topics, progress } = useAppData();
-  const invalidateAppData = useInvalidateAppData(user?.id);
+  const { user, vocabulary, topics, progress } = useAppData({ includeVocabulary: true });
+  const queryClient = useQueryClient();
   const [selectedTopicId, setSelectedTopicId] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
   const [sessionStatusOverrides, setSessionStatusOverrides] = useState<Record<string, UserProgress["status"]>>({});
@@ -74,7 +76,11 @@ export default function WritingPractice() {
     setUpdatingStatus(level);
     try {
       const reviewed = await reviewVocabulary(currentWord.id, level);
-      await invalidateAppData();
+      replaceVocabularyInCache(queryClient, user?.id, reviewed);
+      if (user) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard(user.id), refetchType: "active" });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.due(user.id), refetchType: "active" });
+      }
       const wordId = currentWord.id;
       if (wordId && selectedStatus) {
         setSessionStatusOverrides(current => ({

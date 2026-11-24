@@ -1,11 +1,13 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { Search, Edit, Trash2, X, Volume2, Loader2 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { bulkDeleteVocabulary } from "../api";
-import { useAppData, useInvalidateAppData } from "../hooks/useAppData";
+import { queryKeys } from "../api";
+import { useAppData, useVocabularyPage } from "../hooks/useAppData";
 import { Vocabulary } from "../types";
 import { speakEnglish } from "../services/speechService";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 25;
 const WORD_LIST_FILTERS_STORAGE_KEY_PREFIX = "lexis:word-list-filters";
 
 type WordListFilters = {
@@ -24,8 +26,8 @@ interface WordListProps {
 }
 
 export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
-  const { user, topics, progress, vocabulary } = useAppData();
-  const invalidateAppData = useInvalidateAppData(user?.id);
+  const { user, topics } = useAppData();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterLevel, setFilterLevel] = useState("");
@@ -33,12 +35,29 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
   const [filterStatus, setFilterStatus] = useState("");
   const [filterSkillTag, setFilterSkillTag] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [cursor, setCursor] = useState<string | undefined>();
+  const [previousCursors, setPreviousCursors] = useState<(string | undefined)[]>([]);
   const [deleteIds, setDeleteIds] = useState<string[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [viewingWord, setViewingWord] = useState<Vocabulary | null>(null);
   const [isListening, setIsListening] = useState(false);
   const hasLoadedStoredFiltersRef = useRef(false);
   const skipNextFiltersPersistRef = useRef(false);
+  const deferredSearch = useDeferredValue(search.trim());
+  const query = useMemo(() => ({
+    cursor,
+    limit: PAGE_SIZE,
+    search: deferredSearch || undefined,
+    type: filterType || undefined,
+    level: filterLevel || undefined,
+    topicId: filterTopicId || undefined,
+    status: filterStatus || undefined,
+    skillTag: filterSkillTag === "speaking" || filterSkillTag === "writing"
+      ? filterSkillTag as "speaking" | "writing"
+      : undefined,
+  }), [cursor, deferredSearch, filterType, filterLevel, filterSkillTag, filterStatus, filterTopicId]);
+  const vocabularyPage = useVocabularyPage(user?.id, query);
+  const pagedVocab = vocabularyPage.data?.vocabulary ?? [];
 
   const filterStorageKey = useMemo(() => {
     if (!user?.id) return "";
@@ -64,7 +83,10 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
     if (deleteIds.length === 0) return;
     try {
       await bulkDeleteVocabulary(deleteIds);
-      await invalidateAppData();
+      if (user) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.vocabulary(user.id), refetchType: "active" });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard(user.id), refetchType: "active" });
+      }
       setSelectedIds(current => current.filter(id => !deleteIds.includes(id)));
       setDeleteIds([]);
     } catch (error) {
@@ -97,6 +119,8 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
     setFilterTopicId("");
     setFilterStatus("");
     setFilterSkillTag("");
+    setCursor(undefined);
+    setPreviousCursors([]);
     setCurrentPage(1);
     setDeleteIds([]);
     setSelectedIds([]);
@@ -118,6 +142,8 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
         setFilterTopicId("");
         setFilterStatus("");
         setFilterSkillTag("");
+        setCursor(undefined);
+        setPreviousCursors([]);
         setCurrentPage(1);
         hasLoadedStoredFiltersRef.current = true;
         return;
@@ -130,11 +156,11 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
       setFilterTopicId(parsedFilters?.filterTopicId || "");
       setFilterStatus(parsedFilters?.filterStatus || "");
       setFilterSkillTag(parsedFilters?.filterSkillTag || "");
-      setCurrentPage(
-        parsedFilters?.currentPage && parsedFilters.currentPage > 0
-          ? parsedFilters.currentPage
-          : 1,
-      );
+      // Cursor pagination cannot safely restore an arbitrary page without also
+      // persisting every cursor in the chain; restore filters and start at page 1.
+      setCursor(undefined);
+      setPreviousCursors([]);
+      setCurrentPage(1);
     } catch (error) {
       console.error("Word list filters restore error:", error);
       sessionStorage.removeItem(filterStorageKey);
@@ -171,60 +197,21 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
     return new Map(topics.map(topic => [topic.id, topic.name]));
   }, [topics]);
 
-  const typeOptions = useMemo(() => {
-    const values = vocabulary.map(v => v.type).filter(Boolean);
-    return Array.from(new Set(values)).sort((a, b) => a.localeCompare(b));
-  }, [vocabulary]);
+  const typeOptions = useMemo(() => ["noun", "verb", "adjective", "adverb", "idiom", "collocation"], []);
 
   const levelOptions = useMemo(() => ["A1", "A2", "B1", "B2", "C1", "C2"], []);
 
   const statusOptions = useMemo(() => ["new", "learning", "good", "mastered"], []);
 
-  const getStatus = (word: Vocabulary) => {
-    return progress.find(pr => pr.wordId === word.id)?.status || "new";
-  };
-
-  const getCreatedAtMs = (value: any) => {
-    if (!value) return 0;
-    if (typeof value === "number") return value;
-    if (value instanceof Date) return value.getTime();
-    if (typeof value.toDate === "function") return value.toDate().getTime();
-    const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
-  };
-
-  const filteredVocab = useMemo(() => {
-    const normalizedSearch = search.trim().toLocaleLowerCase();
-
-    return vocabulary
-      .filter(v => {
-        const matchesSearch = !normalizedSearch || v.word.toLocaleLowerCase().includes(normalizedSearch);
-        const matchesType = !filterType || v.type === filterType;
-        const matchesLevel = !filterLevel || (v.level || "").toUpperCase() === filterLevel;
-        const matchesTopic = !filterTopicId || v.topicId === filterTopicId;
-        const matchesStatus = !filterStatus || getStatus(v) === filterStatus;
-        const matchesSkillTag = !filterSkillTag || v.skillTags?.some(tag => tag === filterSkillTag);
-
-        return matchesSearch && matchesType && matchesLevel && matchesTopic && matchesStatus && matchesSkillTag;
-      })
-      .sort((a, b) => getCreatedAtMs(b.createdAt) - getCreatedAtMs(a.createdAt));
-  }, [vocabulary, search, filterType, filterLevel, filterTopicId, filterStatus, filterSkillTag, progress]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredVocab.length / PAGE_SIZE));
-  const currentPageSafe = Math.min(currentPage, totalPages);
-  const pagedVocab = filteredVocab.slice(
-    (currentPageSafe - 1) * PAGE_SIZE,
-    currentPageSafe * PAGE_SIZE,
-  );
   const areAllPagedWordsSelected = pagedVocab.length > 0 && pagedVocab
     .filter(word => word.id)
     .every(word => selectedIds.includes(word.id!));
 
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
-  }, [currentPage, totalPages]);
+  const resetPagination = () => {
+    setCursor(undefined);
+    setPreviousCursors([]);
+    setCurrentPage(1);
+  };
 
   return (
     <div className="space-y-8 sm:space-y-12">
@@ -243,7 +230,7 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
               value={search}
               onChange={e => {
                 setSearch(e.target.value);
-                setCurrentPage(1);
+                resetPagination();
               }}
             />
             {search && (
@@ -251,7 +238,7 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
                 type="button"
                 onClick={() => {
                   setSearch("");
-                  setCurrentPage(1);
+                  resetPagination();
                 }}
                 aria-label="Clear search"
                 title="Clear search"
@@ -266,7 +253,7 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
             value={filterType}
             onChange={e => {
               setFilterType(e.target.value);
-              setCurrentPage(1);
+              resetPagination();
             }}
           >
             <option value="">All types</option>
@@ -279,7 +266,7 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
             value={filterLevel}
             onChange={e => {
               setFilterLevel(e.target.value);
-              setCurrentPage(1);
+              resetPagination();
             }}
           >
             <option value="">All levels</option>
@@ -292,7 +279,7 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
             value={filterTopicId}
             onChange={e => {
               setFilterTopicId(e.target.value);
-              setCurrentPage(1);
+              resetPagination();
             }}
           >
             <option value="">All topics</option>
@@ -305,7 +292,7 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
             value={filterStatus}
             onChange={e => {
               setFilterStatus(e.target.value);
-              setCurrentPage(1);
+              resetPagination();
             }}
           >
             <option value="">All status</option>
@@ -318,7 +305,7 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
             value={filterSkillTag}
             onChange={e => {
               setFilterSkillTag(e.target.value);
-              setCurrentPage(1);
+              resetPagination();
             }}
           >
             <option value="">All skill contexts</option>
@@ -332,7 +319,7 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
         <div className="p-4 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
           <div className="flex flex-col">
             <h4 className="text-lg sm:text-xl font-headline font-bold text-on-background">All Vocabulary</h4>
-            <p className="text-sm text-on-surface-variant">Showing {filteredVocab.length} terms</p>
+            <p className="text-sm text-on-surface-variant">Showing {pagedVocab.length} terms on this page</p>
           </div>
           <div className="flex items-center gap-3">
             <label className="md:hidden flex items-center gap-2 text-xs text-on-surface-variant">
@@ -355,7 +342,7 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
               </button>
             )}
             <div className="text-xs text-on-surface-variant">
-              Page {currentPageSafe} of {totalPages}
+              Page {currentPage}
             </div>
           </div>
         </div>
@@ -506,26 +493,36 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
                 </div>
               );
             })}
-            {filteredVocab.length === 0 && (
+            {!vocabularyPage.isLoading && pagedVocab.length === 0 && (
               <div className="text-center py-8 text-sm text-on-surface-variant">No terms found.</div>
             )}
           </div>
 
           <div className="mt-6 flex items-center justify-between">
-            <span className="text-xs text-on-surface-variant">Page {currentPageSafe} of {totalPages}</span>
+            <span className="text-xs text-on-surface-variant">Page {currentPage}</span>
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPageSafe === 1}
+                onClick={() => {
+                  const previous = previousCursors.at(-1);
+                  setPreviousCursors(current => current.slice(0, -1));
+                  setCursor(previous);
+                  setCurrentPage(current => Math.max(1, current - 1));
+                }}
+                disabled={previousCursors.length === 0 || vocabularyPage.isFetching}
                 className="px-4 py-2 rounded-lg bg-surface-container-low text-on-surface font-semibold disabled:opacity-50"
               >
                 Prev
               </button>
               <button
                 type="button"
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPageSafe === totalPages}
+                onClick={() => {
+                  if (!vocabularyPage.data?.nextCursor) return;
+                  setPreviousCursors(current => [...current, cursor]);
+                  setCursor(vocabularyPage.data.nextCursor);
+                  setCurrentPage(current => current + 1);
+                }}
+                disabled={!vocabularyPage.data?.nextCursor || vocabularyPage.isFetching}
                 className="px-4 py-2 rounded-lg bg-surface-container-low text-on-surface font-semibold disabled:opacity-50"
               >
                 Next

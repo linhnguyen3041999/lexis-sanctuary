@@ -10,7 +10,7 @@ type TopicDraft = {
 };
 
 export default function TopicManager() {
-  const { user, topics, vocabulary } = useAppData();
+  const { user, topics, vocabulary } = useAppData({ includeVocabulary: true });
   const invalidateAppData = useInvalidateAppData(user?.id);
   const [draft, setDraft] = useState<TopicDraft>({ name: "" });
   const [deleteTopic, setDeleteTopic] = useState<Topic | null>(null);

@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Search, Sparkles, Loader2, Save } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { createVocabulary, updateVocabulary } from "../api";
-import { useAppData, useInvalidateAppData } from "../hooks/useAppData";
+import { queryKeys } from "../api";
+import { replaceVocabularyInCache, useAppData } from "../hooks/useAppData";
 import { Vocabulary, Topic } from "../types";
 import { validateAndCompleteVocab } from "../services/aiService";
 
@@ -14,8 +16,8 @@ interface VocabFormProps {
 }
 
 export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFormProps) {
-  const { user, topics, vocabulary } = useAppData();
-  const invalidateAppData = useInvalidateAppData(user?.id);
+  const { user, topics } = useAppData();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [selectedTopicId, setSelectedTopicId] = useState(editingWord?.topicId || AI_SELECT_TOPIC);
@@ -151,14 +153,6 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
       return;
     }
 
-    const normalizedNewWord = formData.word.trim().toLowerCase();
-    const duplicateWord = vocabulary.find((entry) => entry.word.trim().toLowerCase() === normalizedNewWord);
-    if (!editingWord && duplicateWord) {
-      const existingTopicName = topics.find((topic) => topic.id === duplicateWord.topicId)?.name || "Unknown topic";
-      alert(`"${formData.word.trim()}" already exists in your sanctuary (Topic: ${existingTopicName}).`);
-      return;
-    }
-
     setLoading(true);
 
     try {
@@ -166,9 +160,14 @@ export default function VocabForm({ editingWord, onCancel, onSuccess }: VocabFor
         ...formData,
         topicId: selectedTopic.id,
       };
-      if (editingWord) await updateVocabulary(editingWord.id, vocabData);
-      else await createVocabulary(vocabData);
-      await invalidateAppData();
+      const saved = editingWord
+        ? await updateVocabulary(editingWord.id, vocabData)
+        : await createVocabulary(vocabData);
+      replaceVocabularyInCache(queryClient, user.id, saved);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard(user.id), refetchType: "active" });
+      if (!editingWord) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.vocabulary(user.id), refetchType: "active" });
+      }
 
       // Reset
       setFormData({ word: "", skillTags: [], type: "noun", level: "", ipa: "", synonyms: "", verbPattern: "", collocations: "", relatedForms: "", meaning: "", example: "" });

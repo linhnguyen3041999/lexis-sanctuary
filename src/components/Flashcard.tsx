@@ -1,7 +1,9 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Volume2, Edit, Star, FlipHorizontal, CheckCircle2, Loader2, Sparkles, Info, X } from "lucide-react";
 import { reviewVocabulary } from "../api";
-import { useAppData, useInvalidateAppData } from "../hooks/useAppData";
+import { queryKeys } from "../api";
+import { useQueryClient } from "@tanstack/react-query";
+import { replaceVocabularyInCache, useAppData } from "../hooks/useAppData";
 import { Vocabulary, SRSLevel } from "../types";
 import { speakEnglish } from "../services/speechService";
 import { isBefore, format } from "date-fns";
@@ -32,8 +34,8 @@ function SkillTagBadges({ tags }: { tags?: Vocabulary["skillTags"] }) {
 }
 
 export default function Flashcard() {
-  const { user, vocabulary, progress, topics } = useAppData();
-  const invalidateAppData = useInvalidateAppData(user?.id);
+  const { user, vocabulary, progress, topics } = useAppData({ includeVocabulary: true });
+  const queryClient = useQueryClient();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedTopicId, setSelectedTopicId] = useState("");
   const [flipped, setFlipped] = useState(false);
@@ -123,8 +125,12 @@ export default function Flashcard() {
     setLoading(true);
 
     try {
-      await reviewVocabulary(currentWord.id, level);
-      await invalidateAppData();
+      const reviewed = await reviewVocabulary(currentWord.id, level);
+      replaceVocabularyInCache(queryClient, user?.id, reviewed);
+      if (user) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard(user.id), refetchType: "active" });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.due(user.id), refetchType: "active" });
+      }
       
       setShowWordDetails(false);
       setFlipped(false);

@@ -1,20 +1,13 @@
 import React from "react";
 import { Play, TrendingUp, CheckCircle2, Clock, Star, ChevronRight } from "lucide-react";
 import { useAppData } from "../hooks/useAppData";
-import { isBefore } from "date-fns";
 
 export default function Dashboard({ setActiveTab }: { setActiveTab: (tab: string) => void }) {
-  const { user, vocabulary, progress, topics } = useAppData();
-
-  const dueCount = vocabulary.filter(v => {
-    const p = progress.find(pr => pr.wordId === v.id);
-    if (!p) return false;
-    const nextReviewDate = p.nextReview.toDate ? p.nextReview.toDate() : new Date(p.nextReview);
-    return isBefore(nextReviewDate, new Date());
-  }).length;
-
-  const masteredCount = progress.filter(p => p.status === "mastered").length;
-  const learningCount = progress.filter(p => p.status === "learning").length;
+  const { user, topics, summary } = useAppData();
+  const vocabularyCount = summary?.vocabulary ?? 0;
+  const dueCount = summary?.due ?? 0;
+  const masteredCount = summary?.byStatus.mastered ?? 0;
+  const learningCount = summary?.byStatus.learning ?? 0;
 
   return (
     <div className="space-y-8 sm:space-y-10">
@@ -52,12 +45,12 @@ export default function Dashboard({ setActiveTab }: { setActiveTab: (tab: string
                 cx="80" cy="80" fill="transparent" r="70" stroke="currentColor" strokeWidth="12" strokeLinecap="round"
                 className="text-primary"
                 strokeDasharray="440"
-                strokeDashoffset={440 - (440 * (masteredCount / (vocabulary.length || 1)))}
+                strokeDashoffset={440 - (440 * (masteredCount / (vocabularyCount || 1)))}
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-2xl sm:text-3xl font-headline font-extrabold text-primary">
-                {Math.round((masteredCount / (vocabulary.length || 1)) * 100)}%
+                {Math.round((masteredCount / (vocabularyCount || 1)) * 100)}%
               </span>
             </div>
           </div>
@@ -76,7 +69,7 @@ export default function Dashboard({ setActiveTab }: { setActiveTab: (tab: string
                 <span className="font-bold">{masteredCount}</span>
               </div>
               <div className="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
-                <div className="h-full bg-primary rounded-full" style={{ width: `${(masteredCount / (vocabulary.length || 1)) * 100}%` }}></div>
+                <div className="h-full bg-primary rounded-full" style={{ width: `${(masteredCount / (vocabularyCount || 1)) * 100}%` }}></div>
               </div>
             </div>
             <div className="space-y-1.5">
@@ -85,7 +78,7 @@ export default function Dashboard({ setActiveTab }: { setActiveTab: (tab: string
                 <span className="font-bold">{learningCount}</span>
               </div>
               <div className="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
-                <div className="h-full bg-secondary rounded-full" style={{ width: `${(learningCount / (vocabulary.length || 1)) * 100}%` }}></div>
+                <div className="h-full bg-secondary rounded-full" style={{ width: `${(learningCount / (vocabularyCount || 1)) * 100}%` }}></div>
               </div>
             </div>
           </div>
@@ -103,7 +96,6 @@ export default function Dashboard({ setActiveTab }: { setActiveTab: (tab: string
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
             {topics.slice(0, 3).map(topic => {
-              const topicVocab = vocabulary.filter(v => v.topicId === topic.id);
               return (
                 <div 
                   key={topic.id}
@@ -115,7 +107,7 @@ export default function Dashboard({ setActiveTab }: { setActiveTab: (tab: string
                   </div>
                   <div className="flex-1">
                     <h5 className="font-headline font-bold text-on-background">{topic.name}</h5>
-                    <p className="text-xs text-on-surface-variant">{topicVocab.length} Words</p>
+                    <p className="text-xs text-on-surface-variant">Browse vocabulary</p>
                   </div>
                   <ChevronRight className="w-5 h-5 text-on-surface-variant group-hover:text-primary transition-colors" />
                 </div>

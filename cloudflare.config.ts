@@ -11,7 +11,9 @@ export default defineConfig({
     workersDev: true,
     previewUrls: true,
     placement: {
-      region: "gcp:asia-southeast1",
+      // Production D1 is served from HKG. Keep compute in the same metro to
+      // avoid adding a Singapore-to-Hong-Kong hop to every auth and DB call.
+      region: "gcp:asia-east2",
     },
     assets: {
       notFoundHandling: "single-page-application",

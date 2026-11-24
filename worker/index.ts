@@ -2,21 +2,20 @@ import { createAuth } from "./auth";
 import { handleAi } from "./ai";
 import { handleDashboard } from "./dashboard";
 import { ApiError, errorResponse, withSecurityHeaders } from "./http";
-import { ensureGeneralTopic, requireUserId } from "./session";
+import { requireUserId } from "./session";
 import { handleStudy } from "./study";
 import { handleTopics } from "./topics";
 import { handleVocabulary } from "./vocabulary";
 
 async function handleApi(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
-  const auth = createAuth(env, request);
+  const auth = createAuth(env);
 
   if (url.pathname.startsWith("/api/auth/")) {
     return auth.handler(request);
   }
 
   const userId = await requireUserId(auth, request);
-  await ensureGeneralTopic(env.DB, userId);
 
   if (url.pathname === "/api/topics" || url.pathname.startsWith("/api/topics/")) {
     return handleTopics(request, env.DB, userId);

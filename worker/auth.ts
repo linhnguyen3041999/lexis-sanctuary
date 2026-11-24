@@ -1,6 +1,5 @@
 import { betterAuth } from "better-auth";
 import { withCloudflare } from "better-auth-cloudflare";
-import type { CloudflareGeolocation } from "better-auth-cloudflare";
 
 const authSchema = {
   user: {
@@ -49,21 +48,9 @@ const authSchema = {
   },
 } as const;
 
-export function createAuth(env: Env, request: Request) {
-  const origin = env.BETTER_AUTH_URL || new URL(request.url).origin;
+function buildAuth(env: Env) {
+  const origin = env.BETTER_AUTH_URL;
   const secure = origin.startsWith("https://");
-  const incomingCf = request.cf && "colo" in request.cf ? request.cf : undefined;
-  const asNullableString = (value: unknown): string | null => typeof value === "string" ? value : null;
-  const cf: CloudflareGeolocation = {
-    timezone: asNullableString(incomingCf?.timezone),
-    city: asNullableString(incomingCf?.city),
-    country: asNullableString(incomingCf?.country),
-    region: asNullableString(incomingCf?.region),
-    regionCode: asNullableString(incomingCf?.regionCode),
-    colo: asNullableString(incomingCf?.colo),
-    latitude: asNullableString(incomingCf?.latitude),
-    longitude: asNullableString(incomingCf?.longitude),
-  };
 
   return betterAuth({
     baseURL: origin,
@@ -73,9 +60,12 @@ export function createAuth(env: Env, request: Request) {
     ...withCloudflare(
       {
         d1Native: env.DB,
-        autoDetectIpAddress: true,
+        // Keeping the auth instance at isolate scope prevents Better Auth from
+        // rebuilding its D1 adapter (and inspecting the schema) for every API call.
+        // IP collection is not used by this application, so it need not make auth
+        // request-specific.
+        autoDetectIpAddress: false,
         geolocationTracking: false,
-        cf,
       },
       {
         ...authSchema,
@@ -112,4 +102,11 @@ export function createAuth(env: Env, request: Request) {
   });
 }
 
-export type Auth = ReturnType<typeof createAuth>;
+export type Auth = ReturnType<typeof buildAuth>;
+
+let cachedAuth: Auth | undefined;
+
+export function createAuth(env: Env): Auth {
+  cachedAuth ??= buildAuth(env);
+  return cachedAuth;
+}

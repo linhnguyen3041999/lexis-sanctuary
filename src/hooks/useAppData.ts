@@ -76,13 +76,13 @@ export function replaceVocabularyInCache(queryClient: ReturnType<typeof useQuery
 
 export function useInvalidateAppData(userId?: string) {
   const queryClient = useQueryClient();
-  return async () => {
+  return ({ vocabulary = false }: { vocabulary?: boolean } = {}) => {
     if (!userId) return;
-    await Promise.all([
+    const queries = [
       queryClient.invalidateQueries({ queryKey: queryKeys.topics(userId) }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.vocabulary(userId) }),
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard(userId) }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.due(userId) }),
-    ]);
+    ];
+    if (vocabulary) queries.push(queryClient.invalidateQueries({ queryKey: queryKeys.vocabulary(userId) }));
+    void Promise.all(queries);
   };
 }

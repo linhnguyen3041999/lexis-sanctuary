@@ -61,7 +61,7 @@ export default function TopicManager() {
       } else {
         await createTopic(name);
       }
-      await invalidateAppData();
+      invalidateAppData();
       resetDraft();
     } catch (saveError) {
       console.error("Topic save error:", saveError);
@@ -79,7 +79,7 @@ export default function TopicManager() {
 
     try {
       await deleteTopicRequest(deleteTopic.id);
-      await invalidateAppData();
+      invalidateAppData({ vocabulary: true });
       if (draft.id === deleteTopic.id) resetDraft();
       setDeleteTopic(null);
     } catch (deleteError) {

@@ -36,6 +36,27 @@ export async function handleTopics(request: Request, db: D1Database, userId: str
        FROM topics WHERE user_id = ?
        ORDER BY is_default DESC, name_key ASC`,
     ).bind(userId).all<TopicRow>();
+    if (result.results.length === 0) {
+      const now = Date.now();
+      const general: TopicRow = {
+        id: crypto.randomUUID(),
+        name: "General",
+        is_default: 1,
+        created_at: now,
+        updated_at: now,
+      };
+      await db.prepare(
+        `INSERT OR IGNORE INTO topics
+         (id, user_id, name, name_key, is_default, created_at, updated_at)
+         VALUES (?, ?, 'General', 'general', 1, ?, ?)`,
+      ).bind(general.id, userId, now, now).run();
+      const topics = await db.prepare(
+        `SELECT id, name, is_default, created_at, updated_at
+         FROM topics WHERE user_id = ?
+         ORDER BY is_default DESC, name_key ASC`,
+      ).bind(userId).all<TopicRow>();
+      return json({ topics: topics.results.map(serializeTopic) });
+    }
     return json({ topics: result.results.map(serializeTopic) });
   }
 

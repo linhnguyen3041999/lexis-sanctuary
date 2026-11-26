@@ -1,10 +1,11 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Check, Info, PenLine, RotateCw, X } from "lucide-react";
 import { reviewVocabulary } from "../api";
 import { queryKeys } from "../api";
 import { useQueryClient } from "@tanstack/react-query";
 import { replaceVocabularyInCache, useAppData } from "../hooks/useAppData";
-import { SRSLevel, UserProgress, Vocabulary } from "../types";
+import { SRSLevel, Vocabulary } from "../types";
+import { createWritingPracticeSession } from "../services/writingPracticeSession";
 
 const WRITING_PRACTICE_FILTERS_STORAGE_KEY = "lexis:writing-practice-filters";
 
@@ -22,7 +23,7 @@ function normalizeAnswer(answer: string): string {
 }
 
 export default function WritingPractice() {
-  const { user, vocabulary, topics, progress } = useAppData({ includeVocabulary: true });
+  const { user, vocabulary, topics, progress, loading } = useAppData({ includeVocabulary: true });
   const queryClient = useQueryClient();
   const [selectedTopicId, setSelectedTopicId] = useState(() => {
     try {
@@ -40,29 +41,24 @@ export default function WritingPractice() {
       return "";
     }
   });
-  const [sessionStatusOverrides, setSessionStatusOverrides] = useState<Record<string, UserProgress["status"]>>({});
-  const shuffledWords = useMemo(
-    () => shuffleWords(vocabulary),
-    [vocabulary]
-  );
-  const words = useMemo(
-    () => shuffledWords.filter(word =>
+  const eligibleWords = useMemo(
+    () => vocabulary.filter(word =>
       word.meaning.trim() &&
       word.word.trim() &&
       (!selectedTopicId || word.topicId === selectedTopicId) &&
-      (!selectedStatus || (
-        sessionStatusOverrides[word.id || ""] ||
-        progress.find(item => item.wordId === word.id)?.status ||
-        "new"
-      ) === selectedStatus)
+      (!selectedStatus || progress.find(item => item.wordId === word.id)?.status === selectedStatus)
     ),
-    [shuffledWords, selectedTopicId, selectedStatus, progress, sessionStatusOverrides]
+    [vocabulary, selectedTopicId, selectedStatus, progress]
   );
+  const [sessionWords, setSessionWords] = useState<Vocabulary[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [sessionComplete, setSessionComplete] = useState(false);
   const [answer, setAnswer] = useState("");
   const [checked, setChecked] = useState(false);
   const [showWordDetails, setShowWordDetails] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState<SRSLevel | null>(null);
+  const activeFilterKeyRef = useRef<string | null>(null);
+  const filterKey = `${selectedTopicId}:${selectedStatus}`;
 
   useEffect(() => {
     try {
@@ -72,8 +68,34 @@ export default function WritingPractice() {
       console.error("Writing practice filters save error:", error);
     }
   }, [selectedTopicId, selectedStatus]);
-  const displayIndex = words.length > 0 ? currentIndex % words.length : 0;
-  const currentWord = words[displayIndex];
+
+  useEffect(() => {
+    if (loading || activeFilterKeyRef.current === filterKey) return;
+
+    activeFilterKeyRef.current = filterKey;
+    setSessionWords(createWritingPracticeSession(eligibleWords, shuffleWords));
+    setCurrentIndex(0);
+    setSessionComplete(false);
+    setAnswer("");
+    setChecked(false);
+    setShowWordDetails(false);
+    setUpdatingStatus(null);
+  }, [eligibleWords, filterKey, loading]);
+
+  useEffect(() => {
+    if (!sessionComplete) return;
+
+    const restartTimer = window.setTimeout(() => {
+      setSessionWords(current => createWritingPracticeSession(current, shuffleWords));
+      setCurrentIndex(0);
+      setSessionComplete(false);
+    }, 1500);
+
+    return () => window.clearTimeout(restartTimer);
+  }, [sessionComplete]);
+
+  const currentWord = sessionComplete ? undefined : sessionWords[currentIndex];
+  const displayIndex = sessionWords.length > 0 ? Math.min(currentIndex + 1, sessionWords.length) : 0;
   const isCorrect = currentWord ? normalizeAnswer(answer) === normalizeAnswer(currentWord.word) : false;
   const currentProgress = progress.find(item => item.wordId === currentWord?.id);
 
@@ -87,13 +109,17 @@ export default function WritingPractice() {
     setChecked(true);
   };
 
-  const handleNext = () => {
-    setCurrentIndex(displayIndex + 1);
+  const advanceSession = () => {
+    const nextIndex = currentIndex + 1;
+    setCurrentIndex(nextIndex);
+    if (nextIndex >= sessionWords.length) setSessionComplete(true);
     setAnswer("");
     setChecked(false);
     setShowWordDetails(false);
     setUpdatingStatus(null);
   };
+
+  const handleNext = () => advanceSession();
 
   const handleReview = async (level: SRSLevel) => {
     if (!currentWord || updatingStatus) return;
@@ -106,17 +132,7 @@ export default function WritingPractice() {
         void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard(user.id), refetchType: "active" });
         void queryClient.invalidateQueries({ queryKey: queryKeys.due(user.id), refetchType: "active" });
       }
-      const wordId = currentWord.id;
-      if (wordId && selectedStatus) {
-        setSessionStatusOverrides(current => ({
-          ...current,
-          [wordId]: reviewed.progress.status,
-        }));
-      }
-      setCurrentIndex(displayIndex + 1);
-      setAnswer("");
-      setChecked(false);
-      setShowWordDetails(false);
+      advanceSession();
     } catch (error) {
       console.error("Writing Practice review error:", error);
     } finally {
@@ -134,10 +150,6 @@ export default function WritingPractice() {
           value={selectedTopicId}
           onChange={event => {
             setSelectedTopicId(event.target.value);
-            setSessionStatusOverrides({});
-            setCurrentIndex(0);
-            setAnswer("");
-            setChecked(false);
           }}
           className="w-full sm:min-w-48 bg-surface-container-low border border-outline-variant/30 rounded-lg px-4 py-2.5 text-sm font-medium text-on-surface focus:ring-2 focus:ring-primary/20"
         >
@@ -152,10 +164,6 @@ export default function WritingPractice() {
           value={selectedStatus}
           onChange={event => {
             setSelectedStatus(event.target.value);
-            setSessionStatusOverrides({});
-            setCurrentIndex(0);
-            setAnswer("");
-            setChecked(false);
           }}
           className="w-full sm:min-w-40 bg-surface-container-low border border-outline-variant/30 rounded-lg px-4 py-2.5 text-sm font-medium text-on-surface focus:ring-2 focus:ring-primary/20"
         >
@@ -168,6 +176,30 @@ export default function WritingPractice() {
       </div>
     </div>
   );
+
+  if (loading) {
+    return (
+      <div className="max-w-3xl mx-auto">
+        {topicSelector}
+        <div className="min-h-[60vh] flex items-center justify-center text-on-surface-variant" role="status" aria-busy="true">
+          Đang tải bài luyện tập...
+        </div>
+      </div>
+    );
+  }
+
+  if (sessionComplete) {
+    return (
+      <div className="max-w-3xl mx-auto">
+        {topicSelector}
+        <section className="min-h-[60vh] flex flex-col items-center justify-center rounded-[2rem] border border-[#e7dfd2] bg-[#f6f3ed] p-6 text-center" role="status">
+          <Check className="mb-6 h-10 w-10 text-primary" aria-hidden="true" />
+          <h1 className="text-2xl font-headline font-bold text-on-background mb-2">Hoàn thành vòng ôn!</h1>
+          <p className="text-on-surface-variant">Bạn đã ôn hết {sessionWords.length} từ. Đang bắt đầu vòng mới với thứ tự xáo trộn...</p>
+        </section>
+      </div>
+    );
+  }
 
   if (!currentWord) {
     return (
@@ -252,7 +284,7 @@ export default function WritingPractice() {
       )}
 
       <p className="mt-8 text-xs text-on-surface-variant">
-        Từ {displayIndex + 1} / {words.length}
+        Từ {displayIndex} / {sessionWords.length}
       </p>
       </section>
 

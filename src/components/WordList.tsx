@@ -18,14 +18,17 @@ type WordListFilters = {
   filterStatus?: string;
   filterSkillTag?: string;
   currentPage?: number;
+  cursor?: string;
+  previousCursors?: (string | null)[];
 };
 
 interface WordListProps {
   onEdit?: (word: Vocabulary) => void;
-  resetToRootSignal?: number;
+  successMessage?: string;
+  onDismissSuccessMessage?: () => void;
 }
 
-export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
+export default function WordList({ onEdit, successMessage, onDismissSuccessMessage }: WordListProps) {
   const { user, topics } = useAppData();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -113,21 +116,6 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
   };
 
   useEffect(() => {
-    setSearch("");
-    setFilterType("");
-    setFilterLevel("");
-    setFilterTopicId("");
-    setFilterStatus("");
-    setFilterSkillTag("");
-    setCursor(undefined);
-    setPreviousCursors([]);
-    setCurrentPage(1);
-    setDeleteIds([]);
-    setSelectedIds([]);
-    setViewingWord(null);
-  }, [resetToRootSignal]);
-
-  useEffect(() => {
     if (!filterStorageKey) return;
 
     hasLoadedStoredFiltersRef.current = false;
@@ -156,11 +144,9 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
       setFilterTopicId(parsedFilters?.filterTopicId || "");
       setFilterStatus(parsedFilters?.filterStatus || "");
       setFilterSkillTag(parsedFilters?.filterSkillTag || "");
-      // Cursor pagination cannot safely restore an arbitrary page without also
-      // persisting every cursor in the chain; restore filters and start at page 1.
-      setCursor(undefined);
-      setPreviousCursors([]);
-      setCurrentPage(1);
+      setCursor(parsedFilters?.cursor);
+      setPreviousCursors((parsedFilters?.previousCursors || []).map(cursor => cursor ?? undefined));
+      setCurrentPage(parsedFilters?.currentPage && parsedFilters.currentPage > 0 ? parsedFilters.currentPage : 1);
     } catch (error) {
       console.error("Word list filters restore error:", error);
       sessionStorage.removeItem(filterStorageKey);
@@ -184,6 +170,8 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
       filterStatus,
       filterSkillTag,
       currentPage,
+      cursor,
+      previousCursors: previousCursors.map(previousCursor => previousCursor ?? null),
     };
 
     try {
@@ -191,7 +179,7 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
     } catch (error) {
       console.error("Word list filters persist error:", error);
     }
-  }, [filterStorageKey, search, filterType, filterLevel, filterTopicId, filterStatus, filterSkillTag, currentPage]);
+  }, [filterStorageKey, search, filterType, filterLevel, filterTopicId, filterStatus, filterSkillTag, currentPage, cursor, previousCursors]);
 
   const topicNameById = useMemo(() => {
     return new Map(topics.map(topic => [topic.id, topic.name]));
@@ -215,6 +203,19 @@ export default function WordList({ onEdit, resetToRootSignal }: WordListProps) {
 
   return (
     <div className="space-y-8 sm:space-y-12">
+      {successMessage && (
+        <div role="status" className="flex items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary-container px-4 py-3 text-sm font-semibold text-primary">
+          <span>{successMessage}</span>
+          <button
+            type="button"
+            onClick={onDismissSuccessMessage}
+            aria-label="Dismiss success message"
+            className="rounded-full p-1 transition-colors hover:bg-primary/10"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
       <header className="space-y-4 sm:space-y-6">
         <div className="max-w-2xl">
           <h2 className="text-3xl sm:text-4xl font-headline font-extrabold text-on-background tracking-tight mb-2 sm:mb-3">Vocabulary List</h2>

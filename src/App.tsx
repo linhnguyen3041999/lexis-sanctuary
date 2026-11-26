@@ -13,16 +13,35 @@ import WordList from "./components/WordList";
 import TopicManager from "./components/TopicManager";
 import { Vocabulary } from "./types";
 
-export default function App() {
-  const [activeTab, setActiveTab] = useState("dashboard");
-  const [topicEditingWord, setTopicEditingWord] = useState<Vocabulary | null>(null);
-  const [topicResetSignal, setTopicResetSignal] = useState(0);
+const ACTIVE_TAB_STORAGE_KEY = "lexis:active-tab";
+const validTabs = new Set([
+  "dashboard", "vocabulary", "wordList", "topicManager", "flashcards", "writingPractice",
+]);
 
-  const handleSidebarTabChange = (tab: string) => {
-    if (tab === "wordList") {
-      setTopicEditingWord(null);
-      setTopicResetSignal(prev => prev + 1);
+export default function App() {
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      const storedTab = localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
+      return storedTab && validTabs.has(storedTab) ? storedTab : "dashboard";
+    } catch (error) {
+      console.error("Active tab restore error:", error);
+      return "dashboard";
     }
+  });
+  const [topicEditingWord, setTopicEditingWord] = useState<Vocabulary | null>(null);
+  const [wordListNotice, setWordListNotice] = useState("");
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, activeTab);
+    } catch (error) {
+      console.error("Active tab save error:", error);
+    }
+  }, [activeTab]);
+
+  const handleTabChange = (tab: string) => {
+    setTopicEditingWord(null);
+    if (tab !== "wordList") setWordListNotice("");
     setActiveTab(tab);
   };
 
@@ -38,8 +57,8 @@ export default function App() {
   }, [activeTab]);
 
   return (
-    <Layout activeTab={activeTab} setActiveTab={handleSidebarTabChange}>
-      {activeTab === "dashboard" && <Dashboard setActiveTab={setActiveTab} />}
+    <Layout activeTab={activeTab} setActiveTab={handleTabChange}>
+      {activeTab === "dashboard" && <Dashboard setActiveTab={handleTabChange} />}
       {activeTab === "vocabulary" && <VocabForm />}
       {activeTab === "flashcards" && <Flashcard />}
       {activeTab === "writingPractice" && <WritingPractice />}
@@ -48,10 +67,17 @@ export default function App() {
           <VocabForm
             editingWord={topicEditingWord}
             onCancel={() => setTopicEditingWord(null)}
-            onSuccess={() => setTopicEditingWord(null)}
+            onSuccess={() => {
+              setTopicEditingWord(null);
+              setWordListNotice("Word updated successfully.");
+            }}
           />
         ) : (
-          <WordList onEdit={handleEditWord} resetToRootSignal={topicResetSignal} />
+          <WordList
+            onEdit={handleEditWord}
+            successMessage={wordListNotice}
+            onDismissSuccessMessage={() => setWordListNotice("")}
+          />
         )
       )}
       {activeTab === "topicManager" && <TopicManager />}

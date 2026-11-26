@@ -1,10 +1,12 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Check, Info, PenLine, RotateCw, X } from "lucide-react";
 import { reviewVocabulary } from "../api";
 import { queryKeys } from "../api";
 import { useQueryClient } from "@tanstack/react-query";
 import { replaceVocabularyInCache, useAppData } from "../hooks/useAppData";
 import { SRSLevel, UserProgress, Vocabulary } from "../types";
+
+const WRITING_PRACTICE_FILTERS_STORAGE_KEY = "lexis:writing-practice-filters";
 
 function shuffleWords(words: Vocabulary[]): Vocabulary[] {
   const shuffled = [...words];
@@ -22,8 +24,22 @@ function normalizeAnswer(answer: string): string {
 export default function WritingPractice() {
   const { user, vocabulary, topics, progress } = useAppData({ includeVocabulary: true });
   const queryClient = useQueryClient();
-  const [selectedTopicId, setSelectedTopicId] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedTopicId, setSelectedTopicId] = useState(() => {
+    try {
+      return localStorage.getItem(`${WRITING_PRACTICE_FILTERS_STORAGE_KEY}:topic`) || "";
+    } catch (error) {
+      console.error("Writing practice topic filter restore error:", error);
+      return "";
+    }
+  });
+  const [selectedStatus, setSelectedStatus] = useState(() => {
+    try {
+      return localStorage.getItem(`${WRITING_PRACTICE_FILTERS_STORAGE_KEY}:status`) || "";
+    } catch (error) {
+      console.error("Writing practice status filter restore error:", error);
+      return "";
+    }
+  });
   const [sessionStatusOverrides, setSessionStatusOverrides] = useState<Record<string, UserProgress["status"]>>({});
   const shuffledWords = useMemo(
     () => shuffleWords(vocabulary),
@@ -47,6 +63,15 @@ export default function WritingPractice() {
   const [checked, setChecked] = useState(false);
   const [showWordDetails, setShowWordDetails] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState<SRSLevel | null>(null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(`${WRITING_PRACTICE_FILTERS_STORAGE_KEY}:topic`, selectedTopicId);
+      localStorage.setItem(`${WRITING_PRACTICE_FILTERS_STORAGE_KEY}:status`, selectedStatus);
+    } catch (error) {
+      console.error("Writing practice filters save error:", error);
+    }
+  }, [selectedTopicId, selectedStatus]);
   const displayIndex = words.length > 0 ? currentIndex % words.length : 0;
   const currentWord = words[displayIndex];
   const isCorrect = currentWord ? normalizeAnswer(answer) === normalizeAnswer(currentWord.word) : false;
